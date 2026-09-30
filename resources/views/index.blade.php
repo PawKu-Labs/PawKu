@@ -13,10 +13,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
-        rel="stylesheet"
-    >
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
 
     <!-- PawKu CSS -->
     <link rel="stylesheet" href="{{ asset('./css/index.css') }}">
@@ -40,13 +38,7 @@
 
             <a href="/" class="logo">
 
-                <div class="logo-icon">
-                    🐾
-                </div>
-
-                <div class="logo-text">
-                    Paw<span>Ku</span>
-                </div>
+                <img src="{{ asset('assets/icon/pawku-nobg.png') }}" alt="logo-pawku" style="width: 70px;">
 
             </a>
 
@@ -78,7 +70,7 @@
 
             <div class="nav-actions">
 
-                <a href="#" class="login-link">
+                <a href="/login" class="login-link">
                     Login
                 </a>
 
