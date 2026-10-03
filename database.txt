@@ -1,0 +1,183 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  username text,
+  phone_number text,
+  avatar_url text,
+  role text CHECK (role = ANY (ARRAY['pemilik_kucing'::text, 'admin'::text, 'super_admin'::text])),
+  is_active boolean DEFAULT true,
+  created_by uuid,
+  subscription_tier text DEFAULT 'free'::text CHECK (subscription_tier = ANY (ARRAY['free'::text, 'trial'::text, 'premium'::text])),
+  subscription_expires_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  is_blocked boolean NOT NULL DEFAULT false,
+  onboarding_completed boolean DEFAULT false,
+  full_name text,
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id),
+  CONSTRAINT profiles_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.cats (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  owner_id uuid NOT NULL,
+  name text NOT NULL,
+  photo_url text,
+  breed text,
+  birth_date date,
+  gender text CHECK (gender = ANY (ARRAY['jantan'::text, 'betina'::text])),
+  is_neutered boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  weight numeric,
+  CONSTRAINT cats_pkey PRIMARY KEY (id),
+  CONSTRAINT cats_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.weight_logs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cat_id uuid NOT NULL,
+  weight_kg numeric NOT NULL,
+  recorded_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT weight_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT weight_logs_cat_id_fkey FOREIGN KEY (cat_id) REFERENCES public.cats(id)
+);
+CREATE TABLE public.vaccine_records (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cat_id uuid NOT NULL,
+  vaccine_name text NOT NULL,
+  date_given date NOT NULL,
+  next_due_date date,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT vaccine_records_pkey PRIMARY KEY (id),
+  CONSTRAINT vaccine_records_cat_id_fkey FOREIGN KEY (cat_id) REFERENCES public.cats(id)
+);
+CREATE TABLE public.pregnancy_records (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cat_id uuid NOT NULL,
+  mating_date date NOT NULL,
+  estimated_due_date date,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT pregnancy_records_pkey PRIMARY KEY (id),
+  CONSTRAINT pregnancy_records_cat_id_fkey FOREIGN KEY (cat_id) REFERENCES public.cats(id)
+);
+CREATE TABLE public.reminders (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  cat_id uuid NOT NULL,
+  reminder_type text NOT NULL CHECK (reminder_type = ANY (ARRAY['feeding'::text, 'bathing'::text, 'vaccine'::text, 'weight_update'::text])),
+  scheduled_time time without time zone NOT NULL,
+  repeat_interval text DEFAULT 'daily'::text,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT reminders_pkey PRIMARY KEY (id),
+  CONSTRAINT reminders_cat_id_fkey FOREIGN KEY (cat_id) REFERENCES public.cats(id)
+);
+CREATE TABLE public.mitras (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  owner_id uuid NOT NULL,
+  name text NOT NULL,
+  address text,
+  latitude numeric,
+  longitude numeric,
+  description text,
+  photo_url text,
+  status text DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])),
+  approved_by uuid,
+  approved_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  phone_number text,
+  logo_url text,
+  gallery_photo_urls ARRAY DEFAULT '{}'::text[] CHECK (COALESCE(cardinality(gallery_photo_urls), 0) <= 10),
+  mitra_type text NOT NULL DEFAULT 'PAW_SHOP'::text CHECK (mitra_type = ANY (ARRAY['PAW_HEALTH'::text, 'PAW_SHOP'::text, 'PAW_HOTEL'::text, 'PAW_GROOMING'::text])),
+  rules_text text,
+  CONSTRAINT mitras_pkey PRIMARY KEY (id),
+  CONSTRAINT petshops_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.profiles(id),
+  CONSTRAINT petshops_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.mitra_services (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  mitra_id uuid NOT NULL,
+  name text NOT NULL,
+  price numeric,
+  duration_minutes integer,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  capacity integer CHECK (capacity IS NULL OR capacity > 0),
+  CONSTRAINT mitra_services_pkey PRIMARY KEY (id),
+  CONSTRAINT petshop_services_petshop_id_fkey FOREIGN KEY (mitra_id) REFERENCES public.mitras(id)
+);
+CREATE TABLE public.service_slots (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  service_id uuid NOT NULL,
+  date date NOT NULL,
+  start_time time without time zone NOT NULL,
+  max_capacity integer DEFAULT 1,
+  created_at timestamp with time zone DEFAULT now(),
+  is_active boolean NOT NULL DEFAULT true,
+  end_time time without time zone NOT NULL,
+  CONSTRAINT service_slots_pkey PRIMARY KEY (id),
+  CONSTRAINT service_slots_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.mitra_services(id)
+);
+CREATE TABLE public.bookings (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  slot_id uuid,
+  cat_id uuid NOT NULL,
+  owner_id uuid NOT NULL,
+  queue_number integer,
+  status text DEFAULT 'menunggu'::text CHECK (status = ANY (ARRAY['menunggu'::text, 'dikonfirmasi'::text, 'dilayani'::text, 'selesai'::text, 'dibatalkan'::text, 'ditolak'::text, 'kedaluwarsa'::text])),
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  mitra_id uuid NOT NULL,
+  service_id uuid NOT NULL,
+  check_in_at timestamp with time zone,
+  check_out_at timestamp with time zone,
+  CONSTRAINT bookings_pkey PRIMARY KEY (id),
+  CONSTRAINT bookings_cat_id_fkey FOREIGN KEY (cat_id) REFERENCES public.cats(id),
+  CONSTRAINT bookings_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.profiles(id),
+  CONSTRAINT bookings_slot_id_fkey FOREIGN KEY (slot_id) REFERENCES public.service_slots(id),
+  CONSTRAINT bookings_mitra_id_fkey FOREIGN KEY (mitra_id) REFERENCES public.mitras(id),
+  CONSTRAINT bookings_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.mitra_services(id)
+);
+CREATE TABLE public.reviews (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  booking_id uuid NOT NULL UNIQUE,
+  rating integer NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT reviews_pkey PRIMARY KEY (id),
+  CONSTRAINT reviews_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.bookings(id)
+);
+CREATE TABLE public.breed_weight_standards (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  breed text NOT NULL UNIQUE,
+  min_ideal_weight_kg numeric,
+  max_ideal_weight_kg numeric,
+  CONSTRAINT breed_weight_standards_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.mitra_operating_hours (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  mitra_id uuid NOT NULL,
+  day_of_week integer NOT NULL CHECK (day_of_week >= 0 AND day_of_week <= 6),
+  is_closed boolean DEFAULT false,
+  is_24h boolean DEFAULT false,
+  open_time time without time zone,
+  close_time time without time zone,
+  CONSTRAINT mitra_operating_hours_pkey PRIMARY KEY (id),
+  CONSTRAINT petshop_operating_hours_petshop_id_fkey FOREIGN KEY (mitra_id) REFERENCES public.mitras(id)
+);
+CREATE TABLE public.migrations (
+  id integer NOT NULL DEFAULT nextval('migrations_id_seq'::regclass),
+  migration character varying NOT NULL,
+  batch integer NOT NULL,
+  CONSTRAINT migrations_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.sessions (
+  id character varying NOT NULL,
+  user_id bigint,
+  ip_address character varying,
+  user_agent text,
+  payload text NOT NULL,
+  last_activity integer NOT NULL,
+  CONSTRAINT sessions_pkey PRIMARY KEY (id)
+);
