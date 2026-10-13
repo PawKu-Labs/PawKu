@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\MitraDashboardController;
 use App\Http\Controllers\OwnerDashboardController;
+use App\Http\Controllers\OwnerMitraController;
 use App\Http\Controllers\SuperAdminController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,16 +30,18 @@ Route::post('/auth/session', [AuthController::class, 'session'])
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // PEMILIK KUCING (role: pemilik_kucing)
+    // PEMILIK KUCING (role: pemilik_kucing) - mencakup Menu Utama & Fitur Mitra
     Route::prefix('owner')->name('owner.')->middleware('role:pemilik_kucing')->group(function () {
         Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('dashboard');
         Route::get('/vaccine-calculator', [OwnerDashboardController::class, 'vaccineCalculator'])->name('vaccine.calculator');
+
+        // Fitur Mitra Petshop milik pemilik kucing
+        Route::get('/mitra/dashboard', [OwnerMitraController::class, 'index'])->name('mitra.dashboard');
+        Route::post('/mitra/bookings/{id}/status', [OwnerMitraController::class, 'updateBookingStatus'])->name('mitra.booking.status');
     });
 
-    // MITRA PETSHOP (role: mitra)
-    Route::prefix('mitra')->name('mitra.')->middleware('role:mitra')->group(function () {
-        Route::get('/dashboard', [MitraDashboardController::class, 'index'])->name('dashboard');
-    });
+    // Alias / redirect rute lama mitra ke dashboard mitra pemilik kucing
+    Route::get('/mitra/dashboard', fn () => redirect()->route('owner.mitra.dashboard'))->name('mitra.dashboard');
 
     // ADMIN (role: admin)
     Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {

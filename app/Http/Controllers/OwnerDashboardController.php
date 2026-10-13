@@ -22,6 +22,7 @@ class OwnerDashboardController extends Controller
             'cats' => 0,
             'bookings' => 0,
             'upcoming_bookings' => 0,
+            'mitras' => 0,
         ];
 
         try {
@@ -32,6 +33,7 @@ class OwnerDashboardController extends Controller
                     ->where('user_id', $userId)
                     ->where('booking_date', '>=', now()->toDateString())
                     ->count();
+                $stats['mitras'] = DB::table('mitras')->where('owner_id', $userId)->count();
             }
         } catch (\Throwable $e) {
             report($e);

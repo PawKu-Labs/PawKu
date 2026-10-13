@@ -448,6 +448,47 @@
                 </svg>
                 <span>Kalkulator Vaksin</span>
             </a>
+
+            <div class="menu-label" style="margin-top: 14px;">Mitra</div>
+            @php
+                $mitrasList = $layoutUserMitras ?? collect();
+                $hasMitraActive = ($layoutHasMitra ?? false);
+                $hasApproved = ($layoutHasApprovedMitra ?? false);
+            @endphp
+            @if ($hasMitraActive)
+                <a href="{{ route('owner.mitra.dashboard') }}"
+                    class="{{ request()->routeIs('owner.mitra.*') ? 'active' : '' }}"
+                    style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
+                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                            <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
+                            <path d="M2 7h20" />
+                        </svg>
+                        <span>Dashboard Mitra</span>
+                    </div>
+                    @if ($mitrasList->count() > 1)
+                        <span style="font-size: 10.5px; font-weight: 700; background: #e0f2fe; color: #0284c7; padding: 2px 7px; border-radius: 12px; white-space: nowrap;">{{ $mitrasList->count() }} Mitra</span>
+                    @elseif (!$hasApproved)
+                        <span style="font-size: 10px; font-weight: 700; background: #fef3c7; color: #d97706; padding: 2px 6px; border-radius: 10px; white-space: nowrap;">Menunggu</span>
+                    @endif
+                </a>
+            @else
+                <div class="menu-item-disabled"
+                    onclick="showMitraDisabledInfo()"
+                    title="Fitur Mitra belum aktif. Anda belum memiliki mitra yang terdaftar/disetujui."
+                    style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; color: #94a3b8; font-size: 13.5px; font-weight: 500; border-radius: var(--r); cursor: not-allowed; opacity: 0.6; transition: .2s; background: transparent; user-select: none;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px; color: #94a3b8;">
+                            <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                        <span>Dashboard Mitra</span>
+                    </div>
+                    <span style="font-size: 10px; font-weight: 600; background: #f1f5f9; color: #94a3b8; padding: 2px 6px; border-radius: 4px; white-space: nowrap; border: 1px solid #e2e8f0;">Disabled</span>
+                </div>
+            @endif
         </nav>
         <div class="side-foot">
             <div class="me">
@@ -488,6 +529,16 @@
                 if (result.isConfirmed) {
                     document.getElementById('logout-form').submit();
                 }
+            });
+        }
+
+        function showMitraDisabledInfo() {
+            Swal.fire({
+                title: 'Fitur Mitra Belum Aktif',
+                text: 'Akun Anda belum memiliki petshop / mitra yang terdaftar dan disetujui di PawKu. Hubungi administrator untuk mengajukan kemitraan petshop atau klinik hewan.',
+                icon: 'info',
+                confirmButtonColor: '#2E9E6B',
+                confirmButtonText: 'Mengerti'
             });
         }
 
