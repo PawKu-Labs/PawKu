@@ -43,6 +43,13 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+}
+
 /* Auth Card / Container */
 .auth-wrapper {
     width: 100%;

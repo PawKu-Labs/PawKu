@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap"
         rel="stylesheet">
     <style>
         :root {
@@ -38,12 +38,16 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Montserrat', sans-serif;
             background: var(--bg);
             color: var(--body);
             -webkit-font-smoothing: antialiased;
             min-height: 100vh;
             display: flex
+        }
+
+        button, input, select, textarea {
+            font-family: inherit;
         }
 
         .sidebar {
