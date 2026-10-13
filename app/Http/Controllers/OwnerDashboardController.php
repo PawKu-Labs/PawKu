@@ -43,4 +43,37 @@ class OwnerDashboardController extends Controller
             'stats' => $stats,
         ]);
     }
+
+    /**
+     * Tampilkan halaman kalkulator vaksin untuk pemilik kucing.
+     */
+    public function vaccineCalculator(Request $request): View
+    {
+        $sessionData = $request->session()->get('supabase', []);
+        $user = $sessionData['user'] ?? [];
+        $profile = $sessionData['profile'] ?? [];
+        $userId = $user['id'] ?? null;
+
+        $cats = collect();
+        if ($userId) {
+            try {
+                $cats = DB::table('cats')
+                    ->where('owner_id', $userId)
+                    ->orderBy('name')
+                    ->get();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        $selectedCatId = $request->query('cat_id');
+        $selectedCat = $cats->firstWhere('id', $selectedCatId) ?? $cats->first();
+
+        return view('owner.vaccine-calculator', [
+            'user' => $user,
+            'profile' => $profile,
+            'cats' => $cats,
+            'selectedCat' => $selectedCat,
+        ]);
+    }
 }

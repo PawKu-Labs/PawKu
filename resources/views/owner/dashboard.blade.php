@@ -36,14 +36,19 @@
 
     <section>
         <div class="group-title">Aksi Cepat</div>
-        <div class="grid g2">
-            <div class="card" style="text-align:center; padding:32px 22px;">
-                <div style="font-size:40px; margin-bottom:12px;">🐱</div>
+        <div class="grid g3">
+            <div class="card" style="text-align:center; padding:28px 20px;">
+                <div style="font-size:36px; margin-bottom:10px;">🐱</div>
                 <p style="font-weight:600; color:var(--heading); margin-bottom:4px;">Profil Kucing</p>
-                <p style="font-size:12px; color:var(--muted);">Lihat dan kelola profil kucing Anda</p>
+                <p style="font-size:12px; color:var(--muted);">Lihat profil kucing Anda</p>
             </div>
-            <div class="card" style="text-align:center; padding:32px 22px;">
-                <div style="font-size:40px; margin-bottom:12px;">📋</div>
+            <a href="{{ route('owner.vaccine.calculator') }}" class="card" style="text-align:center; padding:28px 20px; text-decoration:none; display:block; transition:transform .2s, box-shadow .2s;">
+                <div style="font-size:36px; margin-bottom:10px;">💉</div>
+                <p style="font-weight:600; color:var(--heading); margin-bottom:4px;">Kalkulator Vaksin</p>
+                <p style="font-size:12px; color:var(--muted);">Hitung jadwal vaksinasi kucing</p>
+            </a>
+            <div class="card" style="text-align:center; padding:28px 20px;">
+                <div style="font-size:36px; margin-bottom:10px;">📋</div>
                 <p style="font-weight:600; color:var(--heading); margin-bottom:4px;">Riwayat Booking</p>
                 <p style="font-size:12px; color:var(--muted);">Lihat riwayat booking grooming</p>
             </div>

@@ -33,6 +33,7 @@ Route::middleware('auth')->group(function () {
     // PEMILIK KUCING (role: pemilik_kucing)
     Route::prefix('owner')->name('owner.')->middleware('role:pemilik_kucing')->group(function () {
         Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/vaccine-calculator', [OwnerDashboardController::class, 'vaccineCalculator'])->name('vaccine.calculator');
     });
 
     // MITRA PETSHOP (role: mitra)
