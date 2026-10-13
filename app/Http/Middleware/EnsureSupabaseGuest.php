@@ -19,9 +19,12 @@ class EnsureSupabaseGuest
 
         if ($accessToken) {
             $role = $request->session()->get('supabase.profile.role');
-            $redirect = $role === 'super_admin'
-                ? route('superadmin.dashboard')
-                : route('admin.dashboard');
+            $redirect = match ($role) {
+                'super_admin' => route('superadmin.dashboard'),
+                'admin' => route('admin.dashboard'),
+                'mitra' => route('mitra.dashboard'),
+                default => route('owner.dashboard'),
+            };
 
             if ($request->expectsJson()) {
                 return response()->json([

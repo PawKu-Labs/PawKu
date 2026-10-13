@@ -151,10 +151,13 @@ class AuthController extends Controller
             'profile' => $profile,
         ]);
 
-        $role = $profile['role'] ?? 'admin';
-        $redirectRoute = $role === 'super_admin'
-            ? route('superadmin.dashboard')
-            : route('admin.dashboard');
+        $role = $profile['role'] ?? 'pemilik_kucing';
+        $redirectRoute = match ($role) {
+            'super_admin' => route('superadmin.dashboard'),
+            'admin' => route('admin.dashboard'),
+            'mitra' => route('mitra.dashboard'),
+            default => route('owner.dashboard'),
+        };
 
         return response()->json([
             'message' => 'Login berhasil! Mengalihkan...',

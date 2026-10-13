@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\MitraDashboardController;
+use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\SuperAdminController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,12 +30,22 @@ Route::post('/auth/session', [AuthController::class, 'session'])
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // Dashboard admin yang sudah ada
+    // PEMILIK KUCING (role: pemilik_kucing)
+    Route::prefix('owner')->name('owner.')->middleware('role:pemilik_kucing')->group(function () {
+        Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('dashboard');
+    });
+
+    // MITRA PETSHOP (role: mitra)
+    Route::prefix('mitra')->name('mitra.')->middleware('role:mitra')->group(function () {
+        Route::get('/dashboard', [MitraDashboardController::class, 'index'])->name('dashboard');
+    });
+
+    // ADMIN (role: admin)
     Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     });
 
-    // SUPERADMIN
+    // SUPERADMIN (role: super_admin)
     Route::prefix('superadmin')->name('superadmin.')->middleware('role:super_admin')->group(function () {
         Route::get('/dashboard', [SuperAdminController::class, 'dashboard'])->name('dashboard');
 
