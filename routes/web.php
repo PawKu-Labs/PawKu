@@ -53,6 +53,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/petshops/{id}/status', [AdminDashboardController::class, 'updatePetshopStatus'])->name('petshops.status');
         Route::get('/activity', [AdminDashboardController::class, 'activity'])->name('activity');
 
+Route::view('/pricing', 'admin.pricing')->name('pricing');
         // Kelola Artikel (dummy dulu)
         Route::get('/articles', fn() => view('admin.article'))->name('articles');
 
