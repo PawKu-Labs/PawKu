@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +10,9 @@
     <!-- Google Fonts: Montserrat -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap"
+        rel="stylesheet">
 
     <style>
         :root {
@@ -57,7 +60,10 @@
             display: flex;
         }
 
-        button, input, select, textarea {
+        button,
+        input,
+        select,
+        textarea {
             font-family: inherit;
         }
 
@@ -582,10 +588,25 @@
             justify-content: center;
         }
 
-        .icon-blue { background: #e6f4ff; color: #1677ff; }
-        .icon-green { background: #f6ffed; color: #52c41a; }
-        .icon-gold { background: #fffbe6; color: #faad14; }
-        .icon-purple { background: #f9f0ff; color: #722ed1; }
+        .icon-blue {
+            background: #e6f4ff;
+            color: #1677ff;
+        }
+
+        .icon-green {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+
+        .icon-gold {
+            background: #fffbe6;
+            color: #faad14;
+        }
+
+        .icon-purple {
+            background: #f9f0ff;
+            color: #722ed1;
+        }
 
         .stat-value {
             font-family: 'Montserrat', sans-serif;
@@ -608,8 +629,13 @@
             gap: 2px;
         }
 
-        .trend-up { color: var(--success); }
-        .trend-down { color: var(--danger); }
+        .trend-up {
+            color: var(--success);
+        }
+
+        .trend-down {
+            color: var(--danger);
+        }
 
         .stat-period {
             color: var(--text-muted);
@@ -720,13 +746,14 @@
     </style>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+
 <body>
 
     <!-- Sidebar Ala Mantis -->
     <aside class="sidebar">
         <a href="{{ route('admin.dashboard') }}" class="sidebar-brand">
             <img src="{{ asset('assets/icon/pawku-nobg.png') }}" alt="PawKu" class="brand-logo-img"
-                 onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/fashaputri/asset/main/pawku.png';">
+                onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/fashaputri/asset/main/pawku.png';">
             <div class="brand-info">
                 <span class="brand-name">PawKu</span>
                 <span class="brand-badge">ADMIN v1.0</span>
@@ -757,7 +784,8 @@
                     <li class="menu-item">
                         <a href="#bookings">
                             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path d="M19 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+                                <path d="M19 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z">
+                                </path>
                                 <line x1="16" y1="2" x2="16" y2="6"></line>
                                 <line x1="8" y1="2" x2="8" y2="6"></line>
                                 <line x1="3" y1="10" x2="21" y2="10"></line>
@@ -786,6 +814,30 @@
                             </svg>
                             <span>Petshops & Mitra</span>
                             <span class="menu-badge">{{ $stats['petshops'] ?? 0 }}</span>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('admin.articles*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.articles') }}">
+                            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <line x1="10" y1="9" x2="8" y2="9"></line>
+                            </svg>
+                            <span>Kelola Artikel</span>
+                        </a>
+                    </li>
+                    <li class="menu-item {{ request()->routeIs('admin.backup*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.backup') }}">
+                            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                            </svg>
+                            <span>Backup Data</span>
                         </a>
                     </li>
                 </ul>
@@ -827,7 +879,8 @@
                     @endif
                 </div>
                 <div class="user-mini-meta">
-                    <span class="user-mini-name">{{ $profile['full_name'] ?? $user['user_metadata']['full_name'] ?? 'Admin PawKu' }}</span>
+                    <span
+                        class="user-mini-name">{{ $profile['full_name'] ?? $user['user_metadata']['full_name'] ?? 'Admin PawKu' }}</span>
                     <span class="user-mini-role">{{ ucfirst($profile['role'] ?? 'Super Admin') }}</span>
                 </div>
             </div>
@@ -860,7 +913,8 @@
                     @csrf
                 </form>
                 <button type="button" class="btn-action-logout" title="Keluar dan hapus sesi" onclick="confirmLogout()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                         <polyline points="16 17 21 12 16 7"></polyline>
                         <line x1="21" y1="12" x2="9" y2="12"></line>
@@ -882,7 +936,10 @@
                     <span>Dashboard Mantis</span>
                 </div>
                 <h1 class="page-title">Dashboard Administrasi</h1>
-                <p class="page-subtitle">Selamat datang kembali, <strong>{{ $profile['full_name'] ?? $user['user_metadata']['full_name'] ?? ($user['email'] ?? 'Administrator') }}</strong>. Sesi Anda aktif dan berjalan normal.</p>
+                <p class="page-subtitle">Selamat datang kembali,
+                    <strong>{{ $profile['full_name'] ?? $user['user_metadata']['full_name'] ?? ($user['email'] ?? 'Administrator') }}</strong>.
+                    Sesi Anda aktif dan berjalan normal.
+                </p>
             </div>
 
             <!-- Panel Khusus Verifikasi Session (Untuk Memeriksa Session) -->
@@ -890,14 +947,16 @@
                 <div class="banner-header">
                     <div class="banner-title-wrap">
                         <div class="banner-icon-badge">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                                 <polyline points="9 12 11 14 15 10"></polyline>
                             </svg>
                         </div>
                         <div>
                             <div class="banner-title">Status Session Laravel & Supabase</div>
-                            <div class="banner-subtitle">Informasi sesi pengguna yang saat ini tersimpan di storage sesi server.</div>
+                            <div class="banner-subtitle">Informasi sesi pengguna yang saat ini tersimpan di storage sesi
+                                server.</div>
                         </div>
                     </div>
                     <div class="status-pill">
@@ -919,13 +978,15 @@
                     </div>
                     <div class="session-item">
                         <span class="session-label">User ID (Supabase UUID)</span>
-                        <span class="session-val" style="font-size: 11.5px; font-family: monospace;">{{ $user['id'] ?? '-' }}</span>
+                        <span class="session-val"
+                            style="font-size: 11.5px; font-family: monospace;">{{ $user['id'] ?? '-' }}</span>
                     </div>
                     <div class="session-item">
                         <span class="session-label">Status Kadaluarsa Sesi</span>
                         <span class="session-val" style="color: var(--brand-green);">
                             @if($expiresAt)
-                                {{ \Carbon\Carbon::createFromTimestamp($expiresAt)->setTimezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB
+                                {{ \Carbon\Carbon::createFromTimestamp($expiresAt)->setTimezone('Asia/Jakarta')->format('d M Y, H:i') }}
+                                WIB
                             @else
                                 Sesi Aktif
                             @endif
@@ -940,7 +1001,8 @@
                     <div class="stat-header">
                         <span class="stat-label">Total Booking Layanan</span>
                         <div class="stat-icon-wrapper icon-blue">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                                 <line x1="16" y1="2" x2="16" y2="6"></line>
                                 <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -959,7 +1021,8 @@
                     <div class="stat-header">
                         <span class="stat-label">Kucing Terdaftar</span>
                         <div class="stat-icon-wrapper icon-green">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
                                 <line x1="9" y1="9" x2="9.01" y2="9"></line>
@@ -978,7 +1041,8 @@
                     <div class="stat-header">
                         <span class="stat-label">Petshop & Mitra</span>
                         <div class="stat-icon-wrapper icon-gold">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                                 <polyline points="9 22 9 12 15 12 15 22"></polyline>
                             </svg>
@@ -995,7 +1059,8 @@
                     <div class="stat-header">
                         <span class="stat-label">Total Profil Pengguna</span>
                         <div class="stat-icon-wrapper icon-purple">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="9" cy="7" r="4"></circle>
                                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -1015,7 +1080,8 @@
             <div class="content-grid">
                 <div class="panel-card">
                     <div class="panel-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
                             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                         </svg>
                         <span>Uji Coba Middleware & Proteksi Sesi</span>
@@ -1024,13 +1090,19 @@
                         Middleware <code>guest</code> dan <code>auth</code> telah diaktifkan untuk memeriksa sesi:
                     </p>
                     <ul style="padding-left: 20px; font-size: 13px; line-height: 1.8; color: var(--text-body);">
-                        <li><strong>Uji Proteksi Login:</strong> Jika Anda mengklik tautan ke halaman login di bawah, middleware <code>guest</code> akan secara otomatis mendeteksi sesi aktif Anda dan mengalihkan Anda kembali ke dashboard ini (tidak bisa ke halaman login lagi sebelum logout).</li>
-                        <li><strong>Uji Proteksi Logout:</strong> Jika Anda menekan tombol "Logout Sesi", session di server dan Supabase akan dihapus, lalu Anda akan dialihkan kembali ke halaman login.</li>
+                        <li><strong>Uji Proteksi Login:</strong> Jika Anda mengklik tautan ke halaman login di bawah,
+                            middleware <code>guest</code> akan secara otomatis mendeteksi sesi aktif Anda dan
+                            mengalihkan Anda kembali ke dashboard ini (tidak bisa ke halaman login lagi sebelum logout).
+                        </li>
+                        <li><strong>Uji Proteksi Logout:</strong> Jika Anda menekan tombol "Logout Sesi", session di
+                            server dan Supabase akan dihapus, lalu Anda akan dialihkan kembali ke halaman login.</li>
                     </ul>
 
                     <div class="action-button-group">
-                        <a href="{{ route('login') }}" class="btn-mantis btn-primary-mantis" title="Coba kunjungi /login untuk tes middleware guest">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <a href="{{ route('login') }}" class="btn-mantis btn-primary-mantis"
+                            title="Coba kunjungi /login untuk tes middleware guest">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
                                 <polyline points="10 17 15 12 10 7"></polyline>
                                 <line x1="15" y1="12" x2="3" y2="12"></line>
@@ -1038,10 +1110,12 @@
                             <span>Tes Akses Halaman Login</span>
                         </a>
 
-                        <form action="{{ route('logout') }}" method="POST" style="display: inline;" onsubmit="event.preventDefault(); confirmLogout()">
+                        <form action="{{ route('logout') }}" method="POST" style="display: inline;"
+                            onsubmit="event.preventDefault(); confirmLogout()">
                             @csrf
                             <button type="submit" class="btn-mantis btn-secondary-mantis">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
                                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                                     <polyline points="16 17 21 12 16 7"></polyline>
                                     <line x1="21" y1="12" x2="9" y2="12"></line>
@@ -1051,7 +1125,8 @@
                         </form>
 
                         <a href="{{ route('home') }}" class="btn-mantis btn-secondary-mantis">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                                 <polyline points="9 22 9 12 15 12 15 22"></polyline>
                             </svg>
@@ -1062,7 +1137,8 @@
 
                 <div class="panel-card">
                     <div class="panel-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
                             <line x1="12" y1="16" x2="12" y2="12"></line>
                             <line x1="12" y1="8" x2="12.01" y2="8"></line>
@@ -1118,4 +1194,5 @@
     </script>
 
 </body>
+
 </html>
