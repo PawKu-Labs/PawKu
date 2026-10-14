@@ -6,6 +6,7 @@ use App\Http\Controllers\MitraDashboardController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\SuperAdminController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AdminBackupController;
 
 // Halaman Publik
 Route::get('/', fn () => view('index'))->name('home');
@@ -41,10 +42,17 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [MitraDashboardController::class, 'index'])->name('dashboard');
     });
 
-    // ADMIN (role: admin)
-    Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
-        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-    });
+Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+    // Kelola Artikel (dummy dulu)
+    Route::get('/articles', fn () => view('admin.article'))->name('articles');
+
+    Route::get('/backup', [AdminBackupController::class, 'index'])->name('backup');
+    Route::post('/backup/download', [AdminBackupController::class, 'download'])
+        ->middleware('throttle:5,1')
+        ->name('backup.download');
+});
 
     // SUPERADMIN (role: super_admin)
     Route::prefix('superadmin')->name('superadmin.')->middleware('role:super_admin')->group(function () {
