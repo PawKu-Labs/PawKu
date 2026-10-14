@@ -1,21 +1,21 @@
 <?php
 
+use App\Http\Controllers\AdminBackupController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\OwnerMitraController;
 use App\Http\Controllers\SuperAdminController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AdminBackupController;
 
 // Halaman Publik
-Route::get('/', fn () => view('index'))->name('home');
+Route::get('/', fn() => view('index'))->name('home');
 
 // Rute Tamu (Hanya dapat diakses jika BELUM login)
 Route::middleware('guest')->group(function () {
-    Route::get('/login', fn () => view('login'))->name('login');
-    Route::get('/register', fn () => view('register'))->name('register');
-    Route::get('/auth/callback', fn () => view('auth.callback'))->name('auth.callback');
+    Route::get('/login', fn() => view('login'))->name('login');
+    Route::get('/register', fn() => view('register'))->name('register');
+    Route::get('/auth/callback', fn() => view('auth.callback'))->name('auth.callback');
 
     Route::post('/login', [AuthController::class, 'login'])
         ->middleware('throttle:10,1')
@@ -42,19 +42,26 @@ Route::middleware('auth')->group(function () {
     });
 
     // Alias / redirect rute lama mitra ke dashboard mitra pemilik kucing
-    Route::get('/mitra/dashboard', fn () => redirect()->route('owner.mitra.dashboard'))->name('mitra.dashboard');
+    Route::get('/mitra/dashboard', fn() => redirect()->route('owner.mitra.dashboard'))->name('mitra.dashboard');
 
-Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
-    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    // ADMIN (role: admin)
+    Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-    // Kelola Artikel (dummy dulu)
-    Route::get('/articles', fn () => view('admin.article'))->name('articles');
+        // Persetujuan Petshop & Log Aktivitas
+        Route::get('/petshops', [AdminDashboardController::class, 'petshops'])->name('petshops');
+        Route::post('/petshops/{id}/status', [AdminDashboardController::class, 'updatePetshopStatus'])->name('petshops.status');
+        Route::get('/activity', [AdminDashboardController::class, 'activity'])->name('activity');
 
-    Route::get('/backup', [AdminBackupController::class, 'index'])->name('backup');
-    Route::post('/backup/download', [AdminBackupController::class, 'download'])
-        ->middleware('throttle:5,1')
-        ->name('backup.download');
-});
+        // Kelola Artikel (dummy dulu)
+        Route::get('/articles', fn() => view('admin.article'))->name('articles');
+
+        // Backup Data
+        Route::get('/backup', [AdminBackupController::class, 'index'])->name('backup');
+        Route::post('/backup/download', [AdminBackupController::class, 'download'])
+            ->middleware('throttle:5,1')
+            ->name('backup.download');
+    });
 
     // SUPERADMIN (role: super_admin)
     Route::prefix('superadmin')->name('superadmin.')->middleware('role:super_admin')->group(function () {
