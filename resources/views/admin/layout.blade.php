@@ -1389,6 +1389,15 @@
                 </svg>
                 <span>Harga &amp; Promo</span>
             </a>
+            <a href="{{ \Illuminate\Support\Facades\Route::has('admin.banner') ? route('admin.banner') : '#' }}"
+                class="{{ request()->routeIs('admin.banner*') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="5" width="18" height="14" rx="2" />
+                    <circle cx="8.5" cy="10" r="1.5" />
+                    <polyline points="21 15 16 10 5 19" />
+                </svg>
+                <span>Banner Promo</span>
+            </a>
             <a href="{{ route('admin.activity') }}" class="{{ request()->routeIs('admin.activity*') ? 'active' : '' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />

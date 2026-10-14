@@ -54,6 +54,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/activity', [AdminDashboardController::class, 'activity'])->name('activity');
 
 Route::view('/pricing', 'admin.pricing')->name('pricing');
+
+   Route::view('/banner', 'admin.banner-promo')->name('banner');
         // Kelola Artikel (dummy dulu)
         Route::get('/articles', fn() => view('admin.article'))->name('articles');
 
