@@ -3,81 +3,285 @@
 
 @push('styles')
     <style>
-        .tab { cursor: pointer; font-family: inherit }
+        .tab {
+            cursor: pointer;
+            font-family: inherit
+        }
 
-        .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 20px }
+        .catalog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+            gap: 20px
+        }
 
         .article-card {
-            background: #fff; border: 1px solid var(--border); border-radius: var(--rl);
-            overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: var(--rl);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
             transition: transform .2s ease, box-shadow .2s ease
         }
-        .article-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md) }
 
-        .article-thumb { position: relative; aspect-ratio: 16 / 9; background: var(--primary-light); overflow: hidden }
-        .article-thumb img { width: 100%; height: 100%; object-fit: cover; display: block }
-        .article-thumb .pill { position: absolute; top: 12px; left: 12px; box-shadow: 0 4px 10px -4px rgba(0, 0, 0, .25) }
+        .article-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md)
+        }
 
-        .article-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 10px; flex: 1 }
-        .article-body .pill { align-self: flex-start }
+        .article-thumb {
+            position: relative;
+            aspect-ratio: 16 / 9;
+            background: var(--primary-light);
+            overflow: hidden
+        }
+
+        .article-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block
+        }
+
+        .article-thumb .pill {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            box-shadow: 0 4px 10px -4px rgba(0, 0, 0, .25)
+        }
+
+        .article-body {
+            padding: 16px 18px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1
+        }
+
+        .article-body .pill {
+            align-self: flex-start
+        }
 
         .article-title {
-            font-size: 14.5px; line-height: 1.4; font-weight: 700; color: var(--heading);
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden
+            font-size: 14.5px;
+            line-height: 1.4;
+            font-weight: 700;
+            color: var(--heading);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden
         }
+
         .article-desc {
-            font-size: 12.5px; line-height: 1.55; color: var(--body);
-            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden
+            font-size: 12.5px;
+            line-height: 1.55;
+            color: var(--body);
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden
         }
 
-        .article-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 11.5px; color: var(--muted); margin-top: auto; padding-top: 4px }
-        .article-meta span { display: inline-flex; align-items: center; gap: 5px }
+        .article-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px 14px;
+            font-size: 11.5px;
+            color: var(--muted);
+            margin-top: auto;
+            padding-top: 4px
+        }
 
-        .article-actions { display: flex; gap: 8px; padding: 12px 18px; border-top: 1px solid #eef0f6; background: #fafbff }
-        .article-actions .btn { flex: 1 }
+        .article-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px
+        }
 
-        .empty-state { display: none }
-        .empty-state.show { display: block }
+        .article-actions {
+            display: flex;
+            gap: 8px;
+            padding: 12px 18px;
+            border-top: 1px solid #eef0f6;
+            background: #fafbff
+        }
+
+        .article-actions .btn {
+            flex: 1
+        }
+
+        .empty-state {
+            display: none
+        }
+
+        .empty-state.show {
+            display: block
+        }
 
         /* Modal */
-        #articleModal { max-height: 92vh; overflow-y: auto }
-        .form-stack { display: flex; flex-direction: column; gap: 16px }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px }
-        @media (max-width: 560px) { .form-row { grid-template-columns: 1fr } }
-        textarea.input { resize: vertical; min-height: 90px; line-height: 1.5 }
-        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px }
+        #articleModal {
+            max-height: 92vh;
+            overflow-y: auto
+        }
+
+        .form-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 16px
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px
+        }
+
+        @media (max-width: 560px) {
+            .form-row {
+                grid-template-columns: 1fr
+            }
+        }
+
+        textarea.input {
+            resize: vertical;
+            min-height: 90px;
+            line-height: 1.5
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px
+        }
 
         /* Dropzone */
         .dropzone {
-            position: relative; border: 2px dashed var(--border); background: #f8fafc;
-            border-radius: var(--r); padding: 22px 16px; text-align: center; cursor: pointer; transition: .2s
+            position: relative;
+            border: 2px dashed var(--border);
+            background: #f8fafc;
+            border-radius: var(--r);
+            padding: 22px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: .2s
         }
-        .dropzone:hover, .dropzone.dragover { border-color: var(--primary); background: var(--primary-light) }
+
+        .dropzone:hover,
+        .dropzone.dragover {
+            border-color: var(--primary);
+            background: var(--primary-light)
+        }
+
         .dropzone-icon {
-            width: 40px; height: 40px; margin: 0 auto 10px; border-radius: 50%; background: #fff;
-            color: var(--primary); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow)
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 10px;
+            border-radius: 50%;
+            background: #fff;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow)
         }
-        .dropzone-text { font-size: 13px; font-weight: 600; color: var(--heading) }
-        .dropzone-text span { color: var(--primary) }
-        .dropzone-hint { font-size: 11.5px; color: var(--muted); margin-top: 4px }
-        .dropzone.has-image { padding: 0; border-style: solid; overflow: hidden; cursor: default }
-        .dropzone-preview { display: none; position: relative; aspect-ratio: 16 / 9 }
-        .dropzone.has-image .dropzone-preview { display: block }
-        .dropzone.has-image .dropzone-empty { display: none }
-        .dropzone-preview img { width: 100%; height: 100%; object-fit: cover; display: block }
-        .dropzone-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px }
+
+        .dropzone-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--heading)
+        }
+
+        .dropzone-text span {
+            color: var(--primary)
+        }
+
+        .dropzone-hint {
+            font-size: 11.5px;
+            color: var(--muted);
+            margin-top: 4px
+        }
+
+        .dropzone.has-image {
+            padding: 0;
+            border-style: solid;
+            overflow: hidden;
+            cursor: default
+        }
+
+        .dropzone-preview {
+            display: none;
+            position: relative;
+            aspect-ratio: 16 / 9
+        }
+
+        .dropzone.has-image .dropzone-preview {
+            display: block
+        }
+
+        .dropzone.has-image .dropzone-empty {
+            display: none
+        }
+
+        .dropzone-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block
+        }
+
+        .dropzone-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 8px
+        }
+
         .dz-btn {
-            border: none; background: rgba(255, 255, 255, .95); color: var(--heading); font-size: 12px; font-weight: 600;
-            padding: 6px 12px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, .15)
+            border: none;
+            background: rgba(255, 255, 255, .95);
+            color: var(--heading);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, .15)
         }
-        .dz-btn.danger { color: var(--danger) }
+
+        .dz-btn.danger {
+            color: var(--danger)
+        }
+
         .dropzone-filename {
-            position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 12px; font-size: 11.5px; color: #fff;
-            background: linear-gradient(transparent, rgba(0, 0, 0, .6)); text-align: left;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 8px 12px;
+            font-size: 11.5px;
+            color: #fff;
+            background: linear-gradient(transparent, rgba(0, 0, 0, .6));
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
         }
-        .dz-error { display: none; font-size: 12px; color: #cf1322; margin-top: 4px }
-        .dz-error.show { display: block }
+
+        .dz-error {
+            display: none;
+            font-size: 12px;
+            color: #cf1322;
+            margin-top: 4px
+        }
+
+        .dz-error.show {
+            display: block
+        }
     </style>
 @endpush
 
@@ -167,6 +371,7 @@
         $totalDraft = $collection->where('status', 'draft')->count();
         $totalViews = $collection->sum('views');
         $categories = $collection->pluck('category')->unique()->values();
+        $fallbackImg = 'https://raw.githubusercontent.com/fashaputri/asset/main/pawku.png';
     @endphp
 
     <div class="hero">
@@ -224,7 +429,8 @@
     </section>
 
     <div class="tabs" id="statusTabs">
-        <button type="button" class="tab active" data-status="all">Semua <span class="n">({{ $totalArtikel }})</span></button>
+        <button type="button" class="tab active" data-status="all">Semua <span
+                class="n">({{ $totalArtikel }})</span></button>
         <button type="button" class="tab" data-status="publish">Terbit <span class="n">({{ $totalPublish }})</span></button>
         <button type="button" class="tab" data-status="draft">Draf <span class="n">({{ $totalDraft }})</span></button>
     </div>
@@ -247,10 +453,11 @@
 
     <div class="catalog-grid" id="catalogGrid">
         @foreach($articles as $a)
-            <article class="article-card" data-status="{{ $a['status'] }}"
-                data-category="{{ strtolower($a['category']) }}" data-title="{{ strtolower($a['title']) }}">
+            <article class="article-card" data-status="{{ $a['status'] }}" data-category="{{ strtolower($a['category']) }}"
+                data-title="{{ strtolower($a['title']) }}">
                 <div class="article-thumb">
-                    <img src="{{ $a['image'] }}" alt="{{ $a['title'] }}" loading="lazy">
+                    <img src="{{ $a['image'] }}" alt="{{ $a['title'] }}" loading="lazy"
+                        onerror="this.onerror=null;this.src='{{ $fallbackImg }}';">
                     <span class="pill {{ $a['status'] === 'publish' ? 'p-approved' : 'p-pending' }}">
                         {{ $a['status'] === 'publish' ? 'Terbit' : 'Draf' }}
                     </span>
@@ -518,8 +725,9 @@
                 modal.close();
             }
 
-            // Tutup saat klik area gelap di luar dialog
+            // Tutup hanya saat klik langsung pada backdrop (bukan klik dari dalam dialog)
             modal.addEventListener('click', e => {
+                if (e.target !== modal) return;
                 const r = modal.getBoundingClientRect();
                 const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
                 if (!inside) closeModal();

@@ -2,9 +2,11 @@
 @section('title', 'Persetujuan Petshop')
 
 @section('content')
-    <div>
-        <h1 class="page-title">Persetujuan Petshop</h1>
-        <p class="page-sub">Tinjau pendaftaran petshop mitra, lalu setujui atau tolak.</p>
+    <div class="hero">
+        <div>
+            <h1 class="page-title">Persetujuan Petshop</h1>
+            <p class="page-sub">Tinjau pendaftaran petshop mitra, lalu setujui atau tolak.</p>
+        </div>
     </div>
 
     <div class="tabs">
@@ -17,45 +19,52 @@
 
     <div class="card">
         <div class="table-wrap">
-            <table>
+            <table class="responsive">
                 <thead>
                     <tr>
-                        <th>Petshop</th>
+                        <th class="cell-first">Petshop</th>
                         <th>Pemilik</th>
                         <th>Didaftarkan</th>
                         <th>Status</th>
-                        <th>Aksi</th>
+                        <th class="cell-last">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($petshops as $p)
                         <tr>
-                            <td><strong>{{ $p->name ?? '-' }}</strong> <span class="pill"
-                                    style="background:#e6f4ff;color:#1677ff">{{ str_replace('PAW_', 'Paw ', $p->mitra_type) }}</span>
+                            <td class="cell-first" data-label="Petshop">
+                                <strong>{{ $p->name ?? '-' }}</strong> 
+                                <span class="pill" style="background:#e6f4ff;color:#1677ff">{{ str_replace('PAW_', 'Paw ', $p->mitra_type) }}</span>
                                 <div class="sub">{{ $p->address ?? '' }}</div>
                             </td>
-                            <td>{{ $p->owner_name ?? '-' }}
+                            <td data-label="Pemilik">
+                                {{ $p->owner_name ?? '-' }}
                                 <div class="sub">{{ $p->owner_email ?? '' }}</div>
                             </td>
-                            <td>{{ !empty($p->created_at) ? \Carbon\Carbon::parse($p->created_at)->setTimezone('Asia/Jakarta')->format('d M Y, H:i') : '-' }}
+                            <td data-label="Didaftarkan">
+                                {{ !empty($p->created_at) ? \Carbon\Carbon::parse($p->created_at)->setTimezone('Asia/Jakarta')->format('d M Y, H:i') : '-' }}
                             </td>
-                            <td><span
-                                    class="pill p-{{ $p->status }}">{{ ['pending' => 'Menunggu', 'approved' => 'Disetujui', 'rejected' => 'Ditolak'][$p->status] ?? $p->status }}</span>
+                            <td data-label="Status">
+                                <span class="pill p-{{ $p->status }}">
+                                    {{ ['pending' => 'Menunggu', 'approved' => 'Disetujui', 'rejected' => 'Ditolak'][$p->status] ?? $p->status }}
+                                </span>
                             </td>
-                            <td>
+                            <td class="cell-last" data-label="Aksi">
                                 <div class="actions">
                                     @if($p->status !== 'approved')
                                         <form method="POST" action="{{ route('superadmin.petshops.status', $p->id) }}"
                                             onsubmit="event.preventDefault(); confirmAction(this, 'Setujui petshop ini?', false)">
-                                            @csrf <input type="hidden" name="status" value="approved">
-                                            <button class="btn btn-green">Setujui</button>
+                                            @csrf 
+                                            <input type="hidden" name="status" value="approved">
+                                            <button class="btn btn-green" type="submit">Setujui</button>
                                         </form>
                                     @endif
                                     @if($p->status !== 'rejected')
                                         <form method="POST" action="{{ route('superadmin.petshops.status', $p->id) }}"
-                                            onsubmit="event.preventDefault(); confirmAction(this, 'Tolak petshop ini?', true)">
-                                            @csrf <input type="hidden" name="status" value="rejected">
-                                            <button class="btn btn-danger">Tolak</button>
+                                            onsubmit="event.preventDefault(); promptReject(this)">
+                                            @csrf 
+                                            <input type="hidden" name="status" value="rejected">
+                                            <button class="btn btn-danger" type="button" onclick="promptReject(this.form)">Tolak</button>
                                         </form>
                                     @endif
                                 </div>
@@ -70,6 +79,7 @@
             </table>
         </div>
         @if($petshops->hasPages())
-        <div class="pagination">{{ $petshops->links('pagination::simple-default') }}</div>@endif
+            <div class="pager">{{ $petshops->links('pagination::simple-default') }}</div>
+        @endif
     </div>
 @endsection
