@@ -3,10 +3,19 @@
 use App\Http\Controllers\AdminBackupController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\MitraDashboardController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\OwnerMitraController;
 use App\Http\Controllers\SuperAdminController;
 use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
+
+const UUID_PATTERN = '[0-9a-fA-F-]{36}';
 
 // Halaman Publik
 Route::get('/', fn() => view('index'))->name('home');
@@ -31,18 +40,42 @@ Route::post('/auth/session', [AuthController::class, 'session'])
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // PEMILIK KUCING (role: pemilik_kucing) - mencakup Menu Utama & Fitur Mitra
+    // PEMILIK KUCING (role: pemilik_kucing)
     Route::prefix('owner')->name('owner.')->middleware('role:pemilik_kucing')->group(function () {
         Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('dashboard');
         Route::get('/vaccine-calculator', [OwnerDashboardController::class, 'vaccineCalculator'])->name('vaccine.calculator');
-
-        // Fitur Mitra Petshop milik pemilik kucing
-        Route::get('/mitra/dashboard', [OwnerMitraController::class, 'index'])->name('mitra.dashboard');
-        Route::post('/mitra/bookings/{id}/status', [OwnerMitraController::class, 'updateBookingStatus'])->name('mitra.booking.status');
     });
 
-    // Alias / redirect rute lama mitra ke dashboard mitra pemilik kucing
-    Route::get('/mitra/dashboard', fn() => redirect()->route('owner.mitra.dashboard'))->name('mitra.dashboard');
+    // MENU MITRA di sisi owner (daftar, status, dashboard, aksi booking)
+    // Kepemilikan mitra diverifikasi langsung di controller (owner_id = user session),
+    // sehingga TIDAK memerlukan middleware 'mitra.owner'.
+    Route::prefix('owner')->name('owner.')->middleware('role:pemilik_kucing,mitra')->group(function () {
+        Route::get('/mitra', [OwnerMitraController::class, 'index'])->name('mitra');
+
+        Route::get('/mitra/{mitra}/status', [OwnerMitraController::class, 'status'])
+            ->where('mitra', UUID_PATTERN)
+            ->name('mitra.status');
+
+        // -> route('owner.mitra.dashboard', ['mitra' => $id, 'tab' => 'booking'])
+        Route::get('/mitra/{mitra}/dashboard', [MitraDashboardController::class, 'index'])
+            ->where('mitra', UUID_PATTERN)
+            ->name('mitra.dashboard');
+
+        // -> route('owner.mitra.booking.status', ['mitra' => $id, 'booking' => $bookingId])
+        Route::post('/mitra/{mitra}/bookings/{booking}/status', [MitraDashboardController::class, 'updateBookingStatus'])
+            ->where('mitra', UUID_PATTERN)
+            ->name('mitra.booking.status');
+    });
+
+    // ALIAS LAMA (kompatibilitas) -> diarahkan ke dashboard yang baru
+    Route::get('/mitra/dashboard', fn() => redirect()->route('owner.mitra'))->name('mitra.legacy');
+
+    Route::prefix('mitra/{mitra}')->as('mitra.')->where(['mitra' => UUID_PATTERN])->group(function () {
+        Route::get('/dashboard', fn(string $mitra) => redirect()->route('owner.mitra.dashboard', ['mitra' => $mitra]))->name('dashboard');
+        Route::get('/bookings', fn(string $mitra) => redirect()->route('owner.mitra.dashboard', ['mitra' => $mitra, 'tab' => 'booking']))->name('bookings');
+        Route::get('/services', fn(string $mitra) => redirect()->route('owner.mitra.dashboard', ['mitra' => $mitra, 'tab' => 'layanan']))->name('services');
+        Route::get('/profile', fn(string $mitra) => redirect()->route('owner.mitra.dashboard', ['mitra' => $mitra, 'tab' => 'profil']))->name('profile');
+    });
 
     // ADMIN (role: admin)
     Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
@@ -53,10 +86,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/petshops/{id}/status', [AdminDashboardController::class, 'updatePetshopStatus'])->name('petshops.status');
         Route::get('/activity', [AdminDashboardController::class, 'activity'])->name('activity');
 
-Route::view('/pricing', 'admin.pricing')->name('pricing');
+        Route::view('/pricing', 'admin.pricing')->name('pricing');
+        Route::view('/banner', 'admin.banner-promo')->name('banner');
 
-   Route::view('/banner', 'admin.banner-promo')->name('banner');
-        // Kelola Artikel (dummy dulu)
+        // Kelola Artikel
         Route::get('/articles', fn() => view('admin.article'))->name('articles');
 
         // Backup Data

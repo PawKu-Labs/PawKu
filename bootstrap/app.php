@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureMitraOwner;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\EnsureSupabaseAuthenticated;
 use App\Http\Middleware\EnsureSupabaseGuest;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'guest' => EnsureSupabaseGuest::class,
             'role' => EnsureRole::class,
             'superadmin' => EnsureSuperAdmin::class,
+            'mitra.owner' => EnsureMitraOwner::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
