@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MitraDashboardController;
 use App\Http\Controllers\OwnerDashboardController;
+use App\Http\Controllers\OwnerMitraController;
 use App\Http\Controllers\SuperAdminController;
 use Illuminate\Support\Facades\Route;
 
@@ -36,10 +37,25 @@ Route::middleware('auth')->group(function () {
         Route::get('/vaccine-calculator', [OwnerDashboardController::class, 'vaccineCalculator'])->name('vaccine.calculator');
     });
 
-    // MITRA PETSHOP (role: mitra)
-    Route::prefix('mitra')->name('mitra.')->middleware('role:mitra')->group(function () {
-        Route::get('/dashboard', [MitraDashboardController::class, 'index'])->name('dashboard');
+    // MENU MITRA di sisi owner (role lama 'mitra' tetap boleh agar tidak 403)
+    Route::prefix('owner')->name('owner.')->middleware('role:pemilik_kucing,mitra')->group(function () {
+        Route::get('/mitra', [OwnerMitraController::class, 'index'])->name('mitra');
+        Route::get('/mitra/{mitra}/status', [OwnerMitraController::class, 'status'])
+            ->where('mitra', '[0-9a-fA-F-]{36}')->name('mitra.status');
     });
+
+    // DASHBOARD MITRA: akses ditentukan kepemilikan, bukan role
+    Route::get('/mitra/dashboard', fn () => redirect()->route('owner.mitra'))->name('mitra.legacy');
+
+    Route::prefix('mitra/{mitra}')->name('mitra.')
+        ->where(['mitra' => '[0-9a-fA-F-]{36}'])
+        ->middleware('mitra.owner')
+        ->group(function () {
+            Route::get('/dashboard', [MitraDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/bookings', [MitraDashboardController::class, 'soon'])->defaults('tab', 'Booking')->name('bookings');
+            Route::get('/services', [MitraDashboardController::class, 'soon'])->defaults('tab', 'Layanan')->name('services');
+            Route::get('/profile', [MitraDashboardController::class, 'soon'])->defaults('tab', 'Profil')->name('profile');
+        });
 
     // ADMIN (role: admin)
     Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {

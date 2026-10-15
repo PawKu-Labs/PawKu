@@ -448,6 +448,15 @@
                 </svg>
                 <span>Kalkulator Vaksin</span>
             </a>
+            <a href="{{ route('owner.mitra') }}"
+                class="{{ request()->routeIs('owner.mitra*') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m2 7 4.4-4.4A2 2 0 0 1 7.8 2h8.4a2 2 0 0 1 1.4.6L22 7" />
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                    <path d="M2 7h20v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0Z" />
+                </svg>
+                <span>Mitra</span>
+            </a>
         </nav>
         <div class="side-foot">
             <div class="me">

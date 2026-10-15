@@ -26,13 +26,18 @@ class AdminDashboardController extends Controller
             'users' => 0,
         ];
 
-        try {
-            $stats['cats'] = DB::table('cats')->count();
-            $stats['bookings'] = DB::table('bookings')->count();
-            $stats['petshops'] = DB::table('petshops')->count();
-            $stats['users'] = DB::table('profiles')->count();
-        } catch (\Throwable $e) {
-            report($e);
+        // Tiap hitungan berdiri sendiri agar satu query gagal tidak menggagalkan yang lain
+        foreach ([
+            'cats' => fn () => DB::table('cats')->count(),
+            'bookings' => fn () => DB::table('bookings')->count(),
+            'petshops' => fn () => DB::table('mitras')->count(),
+            'users' => fn () => DB::table('profiles')->count(),
+        ] as $key => $fn) {
+            try {
+                $stats[$key] = $fn();
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
         return view('admin.dashboard', [

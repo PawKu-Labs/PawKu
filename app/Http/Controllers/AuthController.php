@@ -155,7 +155,7 @@ class AuthController extends Controller
         $redirectRoute = match ($role) {
             'super_admin' => route('superadmin.dashboard'),
             'admin' => route('admin.dashboard'),
-            'mitra' => route('mitra.dashboard'),
+            'mitra' => route('owner.mitra'),
             default => route('owner.dashboard'),
         };
 

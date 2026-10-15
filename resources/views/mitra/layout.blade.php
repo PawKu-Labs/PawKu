@@ -1,3 +1,7 @@
+@php
+    $m = request()->attributes->get('mitra');
+    $mi = \App\Support\MitraType::info($m->mitra_type ?? null);
+@endphp
 <!DOCTYPE html>
 <html lang="id">
 
@@ -415,6 +419,9 @@
             }
         }
     </style>
+    <style>
+        :root { --primary: {{ $mi['color'] }}; --primary-light: {{ $mi['soft'] }}; }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
@@ -424,14 +431,14 @@
         $name = $sp['full_name'] ?? $sp['username'] ?? session('supabase.user.email', 'Mitra');
     @endphp
     <aside class="sidebar">
-        <a href="{{ route('mitra.dashboard') }}" class="brand">
+        <a href="{{ route('mitra.dashboard', $m->id) }}" class="brand">
             <img src="{{ asset('assets/icon/pawku-nobg.png') }}" alt="PawKu"
                 onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/fashaputri/asset/main/pawku.png';">
-            <div><span class="brand-name">PawKu</span><span class="brand-badge">MITRA PETSHOP</span></div>
+            <div><span class="brand-name">PawKu</span><span class="brand-badge">{{ $mi['brand'] }}</span></div>
         </a>
         <nav class="menu">
-            <div class="menu-label">Menu Utama</div>
-            <a href="{{ route('mitra.dashboard') }}"
+            <div class="menu-label" title="{{ $m->name }}">{{ \Illuminate\Support\Str::limit($m->name, 24) }}</div>
+            <a href="{{ route('mitra.dashboard', $m->id) }}"
                 class="{{ request()->routeIs('mitra.dashboard') ? 'active' : '' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7" />
@@ -439,7 +446,44 @@
                     <rect x="14" y="14" width="7" height="7" />
                     <rect x="3" y="14" width="7" height="7" />
                 </svg>
-                <span>Dashboard</span>
+                <span>Beranda</span>
+            </a>
+            <a href="{{ route('mitra.bookings', $m->id) }}"
+                class="{{ request()->routeIs('mitra.bookings') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+                    <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+                </svg>
+                <span>Booking</span>
+            </a>
+            <a href="{{ route('mitra.services', $m->id) }}"
+                class="{{ request()->routeIs('mitra.services') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="6" cy="6" r="3" />
+                    <circle cx="6" cy="18" r="3" />
+                    <line x1="20" y1="4" x2="8.12" y2="15.88" />
+                    <line x1="14.47" y1="14.48" x2="20" y2="20" />
+                    <line x1="8.12" y1="8.12" x2="12" y2="12" />
+                </svg>
+                <span>Layanan</span>
+            </a>
+            <a href="{{ route('mitra.profile', $m->id) }}"
+                class="{{ request()->routeIs('mitra.profile') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span>Profil</span>
+            </a>
+            <div class="menu-label" style="margin-top:12px">Lainnya</div>
+            <a href="{{ route('owner.mitra') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m17 1 4 4-4 4" />
+                    <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                    <path d="m7 23-4-4 4-4" />
+                    <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                </svg>
+                <span>Ganti Mitra</span>
             </a>
         </nav>
         <div class="side-foot">
@@ -451,7 +495,7 @@
                         {{ strtoupper(substr($name, 0, 1)) }}
                     @endif
                 </div>
-                <div><span class="me-name">{{ $name }}</span><span class="me-role">Mitra Petshop</span></div>
+                <div><span class="me-name">{{ $name }}</span><span class="me-role">{{ $mi['label'] }}</span></div>
             </div>
         </div>
     </aside>
