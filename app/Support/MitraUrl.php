@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Facades\Route;
+
 class MitraUrl
 {
     /**
@@ -17,7 +19,7 @@ class MitraUrl
         }
 
         $name = ($mitra->status ?? null) === 'approved'
-            ? 'owner.mitra.dashboard'
+            ? (Route::has('owner.mitra.dashboard.unit') ? 'owner.mitra.dashboard.unit' : 'owner.mitra.dashboard')
             : 'owner.mitra.status';
 
         return route($name, ['mitra' => $id] + $query);

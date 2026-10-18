@@ -151,6 +151,32 @@
     }
 </style>
 
+@if (!$activeMitra)
+    <div class="card" style="text-align: center; padding: 60px 24px; max-width: 680px; margin: 40px auto;">
+        <div style="width: 72px; height: 72px; margin: 0 auto 20px; border-radius: 20px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 36px;">
+            🏪
+        </div>
+        <h2 style="font-size: 22px; font-weight: 700; color: var(--heading); margin-bottom: 8px;">
+            Fitur Kemitraan PawKu
+        </h2>
+        <p style="font-size: 14px; color: var(--body); line-height: 1.6; margin-bottom: 24px;">
+            Akun Anda saat ini belum memiliki unit mitra yang terdaftar. Fitur dashboard mitra diperuntukkan bagi pemilik kucing yang memiliki unit usaha petshop, klinik hewan, hotel kucing, atau salon grooming yang telah diverifikasi oleh admin.
+        </p>
+
+        <div style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--r); padding: 16px 20px; text-align: left; margin-bottom: 24px;">
+            <div style="font-weight: 700; font-size: 13px; color: var(--heading); margin-bottom: 6px;">Cara Menjadi Mitra PawKu:</div>
+            <ul style="font-size: 13px; color: var(--body); padding-left: 20px; line-height: 1.6;">
+                <li>Ajukan permohonan pendaftaran mitra kepada administrator PawKu.</li>
+                <li>Admin akan meninjau kelayakan dan menerbitkan persetujuan.</li>
+                <li>Setelah disetujui, dashboard mitra akan otomatis aktif dan dapat dikelola langsung dari menu ini.</li>
+            </ul>
+        </div>
+
+        <a href="{{ route('owner.dashboard') }}" class="btn-logout" style="background: var(--primary); color: #fff; border: none; text-decoration: none; padding: 10px 24px; border-radius: var(--r); display: inline-block;">
+            Kembali ke Dashboard Utama
+        </a>
+    </div>
+@else
 @php
     $typeMeta = [
         'PAW_HEALTH' => ['label' => 'Paw Health (Klinik Hewan)', 'class' => 'type-paw-health', 'dot' => '#0284c7', 'icon' => '🏥'],
@@ -736,4 +762,5 @@
         });
     }
 </script>
+@endif
 @endsection

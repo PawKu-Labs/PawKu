@@ -15,16 +15,18 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-const UUID_PATTERN = '[0-9a-fA-F-]{36}';
+if (! defined('UUID_PATTERN')) {
+    define('UUID_PATTERN', '[0-9a-fA-F-]{36}');
+}
 
 // Halaman Publik
-Route::get('/', fn() => view('index'))->name('home');
+Route::get('/', fn () => view('index'))->name('home');
 
 // Rute Tamu (Hanya dapat diakses jika BELUM login)
 Route::middleware('guest')->group(function () {
-    Route::get('/login', fn() => view('login'))->name('login');
-    Route::get('/register', fn() => view('register'))->name('register');
-    Route::get('/auth/callback', fn() => view('auth.callback'))->name('auth.callback');
+    Route::get('/login', fn () => view('login'))->name('login');
+    Route::get('/register', fn () => view('register'))->name('register');
+    Route::get('/auth/callback', fn () => view('auth.callback'))->name('auth.callback');
 
     Route::post('/login', [AuthController::class, 'login'])
         ->middleware('throttle:10,1')
@@ -40,8 +42,8 @@ Route::post('/auth/session', [AuthController::class, 'session'])
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // PEMILIK KUCING (role: pemilik_kucing)
-    Route::prefix('owner')->name('owner.')->middleware('role:pemilik_kucing')->group(function () {
+    // PEMILIK KUCING & MITRA (role: pemilik_kucing, mitra)
+    Route::prefix('owner')->name('owner.')->middleware('role:pemilik_kucing,mitra')->group(function () {
         Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('dashboard');
         Route::get('/vaccine-calculator', [OwnerDashboardController::class, 'vaccineCalculator'])->name('vaccine.calculator');
     });
@@ -52,14 +54,17 @@ Route::middleware('auth')->group(function () {
     Route::prefix('owner')->name('owner.')->middleware('role:pemilik_kucing,mitra')->group(function () {
         Route::get('/mitra', [OwnerMitraController::class, 'index'])->name('mitra');
 
+        // Dashboard mitra default (tanpa parameter UUID di URL)
+        Route::get('/mitra/dashboard', [MitraDashboardController::class, 'index'])->name('mitra.dashboard');
+
         Route::get('/mitra/{mitra}/status', [OwnerMitraController::class, 'status'])
             ->where('mitra', UUID_PATTERN)
             ->name('mitra.status');
 
-        // -> route('owner.mitra.dashboard', ['mitra' => $id, 'tab' => 'booking'])
+        // -> route('owner.mitra.dashboard.unit', ['mitra' => $id, 'tab' => 'booking'])
         Route::get('/mitra/{mitra}/dashboard', [MitraDashboardController::class, 'index'])
             ->where('mitra', UUID_PATTERN)
-            ->name('mitra.dashboard');
+            ->name('mitra.dashboard.unit');
 
         // -> route('owner.mitra.booking.status', ['mitra' => $id, 'booking' => $bookingId])
         Route::post('/mitra/{mitra}/bookings/{booking}/status', [MitraDashboardController::class, 'updateBookingStatus'])
@@ -67,14 +72,15 @@ Route::middleware('auth')->group(function () {
             ->name('mitra.booking.status');
     });
 
-    // ALIAS LAMA (kompatibilitas) -> diarahkan ke dashboard yang baru
-    Route::get('/mitra/dashboard', fn() => redirect()->route('owner.mitra'))->name('mitra.legacy');
+    // ALIAS & PENGALIHAN RUTE MITRA
+    Route::get('/mitra', fn () => redirect()->route('owner.mitra.dashboard'));
+    Route::get('/mitra/dashboard', fn () => redirect()->route('owner.mitra.dashboard'))->name('mitra.legacy');
 
     Route::prefix('mitra/{mitra}')->as('mitra.')->where(['mitra' => UUID_PATTERN])->group(function () {
-        Route::get('/dashboard', fn(string $mitra) => redirect()->route('owner.mitra.dashboard', ['mitra' => $mitra]))->name('dashboard');
-        Route::get('/bookings', fn(string $mitra) => redirect()->route('owner.mitra.dashboard', ['mitra' => $mitra, 'tab' => 'booking']))->name('bookings');
-        Route::get('/services', fn(string $mitra) => redirect()->route('owner.mitra.dashboard', ['mitra' => $mitra, 'tab' => 'layanan']))->name('services');
-        Route::get('/profile', fn(string $mitra) => redirect()->route('owner.mitra.dashboard', ['mitra' => $mitra, 'tab' => 'profil']))->name('profile');
+        Route::get('/dashboard', fn (string $mitra) => redirect()->route('owner.mitra.dashboard.unit', ['mitra' => $mitra]))->name('dashboard');
+        Route::get('/bookings', fn (string $mitra) => redirect()->route('owner.mitra.dashboard.unit', ['mitra' => $mitra, 'tab' => 'booking']))->name('bookings');
+        Route::get('/services', fn (string $mitra) => redirect()->route('owner.mitra.dashboard.unit', ['mitra' => $mitra, 'tab' => 'layanan']))->name('services');
+        Route::get('/profile', fn (string $mitra) => redirect()->route('owner.mitra.dashboard.unit', ['mitra' => $mitra, 'tab' => 'profil']))->name('profile');
     });
 
     // ADMIN (role: admin)
@@ -90,7 +96,7 @@ Route::middleware('auth')->group(function () {
         Route::view('/banner', 'admin.banner-promo')->name('banner');
 
         // Kelola Artikel
-        Route::get('/articles', fn() => view('admin.article'))->name('articles');
+        Route::get('/articles', fn () => view('admin.article'))->name('articles');
 
         // Backup Data
         Route::get('/backup', [AdminBackupController::class, 'index'])->name('backup');

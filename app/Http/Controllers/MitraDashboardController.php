@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -42,17 +43,23 @@ class MitraDashboardController extends Controller
     ];
 
     private const T_BOOKINGS = 'bookings';
-    private const T_SERVICES = 'services';
+
+    private const T_SERVICES = 'mitra_services';
+
     private const T_CATS = 'cats';
+
     private const T_PROFILES = 'profiles';
+
     private const T_SLOTS = 'service_slots';
+
     private const T_HOURS = 'mitra_operating_hours';
+
     private const T_REVIEWS = 'reviews';
 
-    public function index(Request $request, string $mitra): View|RedirectResponse
+    public function index(Request $request, ?string $mitra = null): View|RedirectResponse
     {
         $userId = $request->session()->get('supabase.user.id');
-        $mitraId = strtolower($mitra);
+        $requestedMitraId = strtolower((string) ($mitra ?: $request->query('mitra', $request->query('mitra_id'))));
 
         try {
             $userMitras = DB::table('mitras')
@@ -64,8 +71,35 @@ class MitraDashboardController extends Controller
             abort(503, 'Data mitra tidak dapat dimuat. Coba lagi.');
         }
 
-        $activeMitra = $userMitras->first(fn($m) => strtolower((string) $m->id) === $mitraId);
-        abort_if(!$activeMitra, 404);
+        if ($userMitras->isEmpty()) {
+            return view('owner.mitra.dashboard', [
+                'userMitras' => collect(),
+                'activeMitra' => null,
+                'mitraId' => null,
+                'currentTab' => 'beranda',
+                'bookings' => collect(),
+                'services' => collect(),
+                'operatingHours' => collect(),
+                'stats' => [
+                    'total_bookings' => 0,
+                    'today_bookings' => 0,
+                    'pending_bookings' => 0,
+                    'serving_bookings' => 0,
+                    'services_count' => 0,
+                    'total_reviews' => 0,
+                    'avg_rating' => null,
+                ],
+            ]);
+        }
+
+        if ($requestedMitraId !== '') {
+            $activeMitra = $userMitras->first(fn ($m) => strtolower((string) $m->id) === $requestedMitraId);
+            abort_if(! $activeMitra, 404);
+        } else {
+            $activeMitra = $userMitras->firstWhere('status', 'approved') ?? $userMitras->first();
+        }
+
+        $mitraId = strtolower((string) $activeMitra->id);
 
         if ($activeMitra->status !== 'approved') {
             return redirect()->route('owner.mitra.status', ['mitra' => $mitraId]);
@@ -74,13 +108,13 @@ class MitraDashboardController extends Controller
         $tab = (string) $request->query('tab', 'beranda');
         $currentTab = in_array($tab, self::TABS, true) ? $tab : 'beranda';
 
-        $bookings = $this->safe(fn() => $this->loadBookings($activeMitra->id), collect());
+        $bookings = $this->safe(fn () => $this->loadBookings($activeMitra->id), collect());
         $services = $this->safe(
-            fn() => DB::table(self::T_SERVICES)->where('mitra_id', $activeMitra->id)->orderBy('name')->get(),
+            fn () => DB::table(self::T_SERVICES)->where('mitra_id', $activeMitra->id)->orderBy('name')->get(),
             collect()
         );
         $operatingHours = $this->safe(function () use ($activeMitra) {
-            if (!Schema::hasTable(self::T_HOURS)) {
+            if (! Schema::hasTable(self::T_HOURS)) {
                 return collect();
             }
 
@@ -110,19 +144,21 @@ class MitraDashboardController extends Controller
         $userId = $request->session()->get('supabase.user.id');
 
         $activeMitra = $this->safe(
-            fn() => DB::table('mitras')->where('id', strtolower($mitra))->where('owner_id', $userId)->first(),
+            fn () => DB::table('mitras')->where('id', strtolower($mitra))->where('owner_id', $userId)->first(),
             null
         );
-        abort_if(!$activeMitra, 404);
+        abort_if(! $activeMitra, 404);
         abort_if($activeMitra->status !== 'approved', 403);
 
-        $back = redirect()->route('owner.mitra.dashboard', ['mitra' => strtolower($mitra), 'tab' => 'booking']);
+        $back = Route::has('owner.mitra.dashboard.unit')
+            ? redirect()->route('owner.mitra.dashboard.unit', ['mitra' => strtolower($mitra), 'tab' => 'booking'])
+            : redirect()->route('owner.mitra.dashboard', ['mitra' => strtolower($mitra), 'tab' => 'booking']);
 
-        $row = $this->safe(fn() => $this->findBooking($booking, $activeMitra->id), null);
-        abort_if(!$row, 404);
+        $row = $this->safe(fn () => $this->findBooking($booking, $activeMitra->id), null);
+        abort_if(! $row, 404);
 
         $allowed = self::TRANSITIONS[$row->status] ?? [];
-        if (!in_array($data['status'], $allowed, true)) {
+        if (! in_array($data['status'], $allowed, true)) {
             return $back->with('error', 'Perubahan status tidak diizinkan untuk booking ini.');
         }
 
@@ -143,11 +179,11 @@ class MitraDashboardController extends Controller
             return $back->with('error', 'Gagal memperbarui status booking. Coba lagi.');
         }
 
-        if (!$affected) {
+        if (! $affected) {
             return $back->with('error', 'Status booking sudah berubah. Muat ulang halaman.');
         }
 
-        return $back->with('success', 'Status booking diperbarui menjadi "' . $data['status'] . '".');
+        return $back->with('success', 'Status booking diperbarui menjadi "'.$data['status'].'".');
     }
 
     // ---------------------------------------------------------------------
@@ -163,12 +199,13 @@ class MitraDashboardController extends Controller
         $sl = self::T_SLOTS;
 
         $hasMitraCol = Schema::hasColumn($b, 'mitra_id');
+        $userCol = Schema::hasColumn($b, 'owner_id') ? 'owner_id' : 'user_id';
         $hasSlots = Schema::hasTable($sl) && Schema::hasColumn($b, 'slot_id');
 
         $q = DB::table($b)
             ->leftJoin($s, "$s.id", '=', "$b.service_id")
             ->leftJoin($c, "$c.id", '=', "$b.cat_id")
-            ->leftJoin($p, "$p.id", '=', "$b.user_id");
+            ->leftJoin($p, "$p.id", '=', "$b.$userCol");
 
         if ($hasSlots) {
             $q->leftJoin($sl, "$sl.id", '=', "$b.slot_id");
@@ -176,18 +213,26 @@ class MitraDashboardController extends Controller
 
         $q->where($hasMitraCol ? "$b.mitra_id" : "$s.mitra_id", $mitraId);
 
+        $hasSlotDateOnBookings = Schema::hasColumn($b, 'slot_date');
+
         $select = [
             "$b.*",
-            "$s.name as service_name",
+            DB::raw("COALESCE($s.name, ".(Schema::hasColumn($b, 'service_name') ? "$b.service_name" : 'null').') as service_name'),
             "$c.name as cat_name",
             "$p.full_name as customer_name",
             "$p.username as customer_username",
             $this->pick($s, 'price', 'service_price'),
             $this->pick($c, 'breed', 'cat_breed'),
             $this->pick($p, 'phone_number', 'customer_phone'),
-            $hasSlots ? $this->pick($sl, 'slot_date', 'slot_date') : DB::raw('null as slot_date'),
-            $hasSlots ? $this->pick($sl, 'start_time', 'slot_start_time') : DB::raw('null as slot_start_time'),
-            $hasSlots ? $this->pick($sl, 'end_time', 'slot_end_time') : DB::raw('null as slot_end_time'),
+            $hasSlotDateOnBookings
+                ? DB::raw("$b.slot_date as slot_date")
+                : ($hasSlots ? $this->pick($sl, 'date', 'slot_date') : DB::raw('null as slot_date')),
+            Schema::hasColumn($b, 'slot_start_time')
+                ? DB::raw("$b.slot_start_time as slot_start_time")
+                : ($hasSlots ? $this->pick($sl, 'start_time', 'slot_start_time') : DB::raw('null as slot_start_time')),
+            Schema::hasColumn($b, 'slot_end_time')
+                ? DB::raw("$b.slot_end_time as slot_end_time")
+                : ($hasSlots ? $this->pick($sl, 'end_time', 'slot_end_time') : DB::raw('null as slot_end_time')),
         ];
 
         return $q->select($select)->orderByDesc("$b.created_at")->limit(200)->get();
@@ -219,14 +264,26 @@ class MitraDashboardController extends Controller
         })->count();
 
         $review = $this->safe(function () use ($mitraId) {
-            if (!Schema::hasTable(self::T_REVIEWS) || !Schema::hasColumn(self::T_REVIEWS, 'mitra_id')) {
+            if (! Schema::hasTable(self::T_REVIEWS)) {
                 return null;
             }
 
-            return DB::table(self::T_REVIEWS)
-                ->where('mitra_id', $mitraId)
-                ->selectRaw('count(*) as total, avg(rating) as avg_rating')
-                ->first();
+            if (Schema::hasColumn(self::T_REVIEWS, 'mitra_id')) {
+                return DB::table(self::T_REVIEWS)
+                    ->where('mitra_id', $mitraId)
+                    ->selectRaw('count(*) as total, avg(rating) as avg_rating')
+                    ->first();
+            }
+
+            if (Schema::hasTable(self::T_BOOKINGS) && Schema::hasColumn(self::T_REVIEWS, 'booking_id')) {
+                return DB::table(self::T_REVIEWS)
+                    ->join(self::T_BOOKINGS, self::T_BOOKINGS.'.id', '=', self::T_REVIEWS.'.booking_id')
+                    ->where(self::T_BOOKINGS.'.mitra_id', $mitraId)
+                    ->selectRaw('count(*) as total, avg('.self::T_REVIEWS.'.rating) as avg_rating')
+                    ->first();
+            }
+
+            return null;
         }, null);
 
         $totalReviews = (int) ($review->total ?? 0);
@@ -236,7 +293,7 @@ class MitraDashboardController extends Controller
             'today_bookings' => $todayCount,
             'pending_bookings' => $bookings->where('status', 'menunggu')->count(),
             'serving_bookings' => $bookings->where('status', 'dilayani')->count(),
-            'services_count' => $services->filter(fn($svc) => $svc->is_active ?? true)->count(),
+            'services_count' => $services->filter(fn ($svc) => $svc->is_active ?? true)->count(),
             'total_reviews' => $totalReviews,
             'avg_rating' => ($totalReviews > 0 && $review->avg_rating !== null)
                 ? number_format((float) $review->avg_rating, 1)

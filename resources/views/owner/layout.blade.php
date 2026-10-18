@@ -11,419 +11,39 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap"
         rel="stylesheet">
-    <style>
-        :root {
-            --primary: #2E9E6B;
-            --primary-hover: #24805a;
-            --primary-light: #e6f7ef;
-            --blue: #1677ff;
-            --bg: #f8fafc;
-            --border: #e2e8f0;
-            --heading: #1e293b;
-            --body: #475569;
-            --muted: #8c8c8c;
-            --danger: #ef4444;
-            --warning: #faad14;
-            --sidebar: 260px;
-            --header: 68px;
-            --r: 10px;
-            --rl: 14px;
-            --shadow: 0 1px 2px rgba(0, 0, 0, .03), 0 1px 6px -1px rgba(0, 0, 0, .02)
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box
-        }
-
-        body {
-            font-family: 'Montserrat', sans-serif;
-            background: var(--bg);
-            color: var(--body);
-            -webkit-font-smoothing: antialiased;
-            min-height: 100vh;
-            display: flex
-        }
-
-        button, input, select, textarea {
-            font-family: inherit;
-        }
-
-        .sidebar {
-            width: var(--sidebar);
-            background: #fff;
-            border-right: 1px solid var(--border);
-            height: 100vh;
-            position: fixed;
-            inset: 0 auto 0 0;
-            display: flex;
-            flex-direction: column;
-            z-index: 100
-        }
-
-        .brand {
-            height: var(--header);
-            display: flex;
-            align-items: center;
-            padding: 0 24px;
-            border-bottom: 1px solid #f0f2f5;
-            gap: 12px;
-            text-decoration: none
-        }
-
-        .brand img {
-            width: 36px;
-            height: 36px;
-            object-fit: contain
-        }
-
-        .brand-name {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--heading);
-            display: block
-        }
-
-        .brand-badge {
-            font-size: 10px;
-            font-weight: 600;
-            color: var(--primary);
-            background: var(--primary-light);
-            padding: 2px 6px;
-            border-radius: 4px;
-            display: inline-block;
-            margin-top: 2px
-        }
-
-        .menu {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px
-        }
-
-        .menu-label {
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: .8px;
-            padding: 8px 12px 6px
-        }
-
-        .menu a {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 14px;
-            color: var(--body);
-            text-decoration: none;
-            font-size: 13.5px;
-            font-weight: 500;
-            border-radius: var(--r);
-            transition: .2s
-        }
-
-        .menu a:hover {
-            background: #f1f5f9;
-            color: var(--primary)
-        }
-
-        .menu a.active {
-            background: var(--primary-light);
-            color: var(--primary);
-            font-weight: 600
-        }
-
-        .menu svg {
-            width: 18px;
-            height: 18px
-        }
-
-        .side-foot {
-            padding: 16px;
-            border-top: 1px solid #f0f2f5
-        }
-
-        .me {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 12px;
-            border-radius: var(--r);
-            background: var(--bg);
-            border: 1px solid #f0f2f5
-        }
-
-        .avatar {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            color: var(--primary);
-            flex-shrink: 0;
-            overflow: hidden
-        }
-
-        .avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover
-        }
-
-        .me-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--heading);
-            display: block;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 150px
-        }
-
-        .me-role {
-            font-size: 11px;
-            color: var(--muted)
-        }
-
-        .wrap {
-            margin-left: var(--sidebar);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-width: 0
-        }
-
-        .topbar {
-            height: var(--header);
-            background: #fff;
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 99;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding: 0 32px;
-            gap: 16px
-        }
-
-        .btn-logout {
-            background: #fff;
-            border: 1px solid #fee2e2;
-            color: var(--danger);
-            font-size: 13px;
-            font-weight: 600;
-            padding: 8px 16px;
-            border-radius: var(--r);
-            cursor: pointer
-        }
-
-        .btn-logout:hover {
-            background: #fef2f2
-        }
-
-        .content {
-            padding: 28px 32px 48px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px
-        }
-
-        .page-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--heading)
-        }
-
-        .page-sub {
-            font-size: 13.5px;
-            margin-top: 4px
-        }
-
-        .group-title {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: .8px;
-            margin-bottom: 12px
-        }
-
-        .grid {
-            display: grid;
-            gap: 20px
-        }
-
-        .g3 {
-            grid-template-columns: repeat(3, 1fr)
-        }
-
-        .g2 {
-            grid-template-columns: repeat(2, 1fr)
-        }
-
-        @media(max-width:1000px) {
-
-            .g3,
-            .g2 {
-                grid-template-columns: 1fr
-            }
-        }
-
-        .card {
-            background: #fff;
-            border: 1px solid var(--border);
-            border-radius: var(--rl);
-            padding: 20px 22px;
-            box-shadow: var(--shadow)
-        }
-
-        .stat {
-            display: flex;
-            flex-direction: column;
-            gap: 10px
-        }
-
-        .stat-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center
-        }
-
-        .stat-label {
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--muted)
-        }
-
-        .stat-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 17px
-        }
-
-        .stat-value {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--heading)
-        }
-
-        .i-blue {
-            background: #e6f4ff;
-            color: #1677ff
-        }
-
-        .i-green {
-            background: #f6ffed;
-            color: #52c41a
-        }
-
-        .i-gold {
-            background: #fffbe6;
-            color: #faad14
-        }
-
-        .i-red {
-            background: #fff2f0;
-            color: #ff4d4f
-        }
-
-        .i-purple {
-            background: #f9f0ff;
-            color: #722ed1
-        }
-
-        .pill {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600
-        }
-
-        .p-active,
-        .p-approved {
-            background: #ecfdf5;
-            color: #065f46
-        }
-
-        .p-pending {
-            background: #fffbe6;
-            color: #ad6800
-        }
-
-        .p-rejected {
-            background: #fff2f0;
-            color: #cf1322
-        }
-
-        .alert {
-            padding: 12px 16px;
-            border-radius: var(--r);
-            font-size: 13px;
-            font-weight: 500
-        }
-
-        .alert-ok {
-            background: #f6ffed;
-            border: 1px solid #b7eb8f;
-            color: #237804
-        }
-
-        .alert-err {
-            background: #fff2f0;
-            border: 1px solid #ffccc7;
-            color: #a8071a
-        }
-
-        @media(max-width:768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-
-            .wrap {
-                margin-left: 0;
-            }
-
-            .topbar {
-                padding: 0 16px;
-            }
-
-            .content {
-                padding: 20px 16px 48px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="{{ asset('css/dashboard-layout.css') }}">
+    @stack('styles')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
     @php
         $sp = session('supabase.profile', []);
-        $name = $sp['full_name'] ?? $sp['username'] ?? session('supabase.user.email', 'Pengguna');
+        $su = session('supabase.user', []);
+        $name = $sp['full_name'] ?? $sp['username'] ?? ($su['email'] ?? 'Pengguna');
+        $role = $sp['role'] ?? 'pemilik_kucing';
+        $roleLabel = match ($role) {
+            'mitra' => 'Mitra Usaha',
+            'admin' => 'Admin PawKu',
+            'super_admin' => 'Super Admin',
+            default => 'Pemilik Kucing',
+        };
     @endphp
-    <aside class="sidebar">
+
+    <div class="scrim" id="scrim" aria-hidden="true"></div>
+
+    <aside class="sidebar" id="sidebar" aria-label="Navigasi utama">
         <a href="{{ route('owner.dashboard') }}" class="brand">
             <img src="{{ asset('assets/icon/pawku-nobg.png') }}" alt="PawKu"
                 onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/fashaputri/asset/main/pawku.png';">
-            <div><span class="brand-name">PawKu</span><span class="brand-badge">PEMILIK KUCING</span></div>
+            <div>
+                <span class="brand-name">PawKu</span>
+                <span class="brand-badge">PEMILIK KUCING</span>
+            </div>
         </a>
+
         <nav class="menu">
             <div class="menu-label">Menu Utama</div>
             <a href="{{ route('owner.dashboard') }}"
@@ -448,6 +68,8 @@
                 </svg>
                 <span>Kalkulator Vaksin</span>
             </a>
+
+            <div class="menu-label">Bisnis &amp; Kemitraan</div>
             <a href="{{ route('owner.mitra') }}"
                 class="{{ request()->routeIs('owner.mitra*') ? 'active' : '' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -455,33 +77,80 @@
                     <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
                     <path d="M2 7h20v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0Z" />
                 </svg>
-                <span>Mitra</span>
+                <span>Mitra Usaha</span>
             </a>
         </nav>
+
         <div class="side-foot">
             <div class="me">
                 <div class="avatar">
                     @if (!empty($sp['avatar_url']))
-                        <img src="{{ $sp['avatar_url'] }}" alt="">
+                        <img src="{{ $sp['avatar_url'] }}" alt="Avatar">
                     @else
                         {{ strtoupper(substr($name, 0, 1)) }}
                     @endif
                 </div>
-                <div><span class="me-name">{{ $name }}</span><span class="me-role">Pemilik Kucing</span></div>
+                <div style="min-width:0;flex:1;">
+                    <span class="me-name">{{ $name }}</span>
+                    @if (!empty($su['email']))
+                        <span class="me-mail">{{ $su['email'] }}</span>
+                    @endif
+                    <span class="me-role">{{ $roleLabel }}</span>
+                </div>
             </div>
         </div>
     </aside>
 
     <div class="wrap">
         <header class="topbar">
-            <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none;">@csrf</form>
-            <button class="btn-logout" type="button" onclick="confirmLogout()">Keluar</button>
+            <div class="topbar-left">
+                <button class="hamburger" id="menuToggle" type="button" aria-label="Buka menu" aria-controls="sidebar"
+                    aria-expanded="false">
+                    <span class="bars"></span>
+                </button>
+                <div class="topbar-title">
+                    PawKu <span>/ @yield('title')</span>
+                </div>
+            </div>
+            <div>
+                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none;">@csrf</form>
+                <button class="btn-logout" type="button" onclick="confirmLogout()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    <span>Keluar</span>
+                </button>
+            </div>
         </header>
+
         <main class="content">
             @yield('content')
         </main>
     </div>
+
     <script>
+        (function () {
+            const body = document.body;
+            const toggle = document.getElementById('menuToggle');
+            const scrim = document.getElementById('scrim');
+
+            if (!toggle || !scrim) return;
+
+            function setNav(open) {
+                body.classList.toggle('nav-open', open);
+                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                toggle.setAttribute('aria-label', open ? 'Tutup menu' : 'Buka menu');
+            }
+
+            toggle.addEventListener('click', () => setNav(!body.classList.contains('nav-open')));
+            scrim.addEventListener('click', () => setNav(false));
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setNav(false); });
+            document.querySelectorAll('.menu a').forEach((a) => a.addEventListener('click', () => setNav(false)));
+            window.matchMedia('(min-width: 1025px)').addEventListener('change', (e) => { if (e.matches) setNav(false); });
+        })();
+
         function confirmLogout() {
             Swal.fire({
                 title: 'Keluar dari akun?',
@@ -497,16 +166,6 @@
                 if (result.isConfirmed) {
                     document.getElementById('logout-form').submit();
                 }
-            });
-        }
-
-        function showMitraDisabledInfo() {
-            Swal.fire({
-                title: 'Fitur Mitra Belum Aktif',
-                text: 'Akun Anda belum memiliki petshop / mitra yang terdaftar dan disetujui di PawKu. Hubungi administrator untuk mengajukan kemitraan petshop atau klinik hewan.',
-                icon: 'info',
-                confirmButtonColor: '#2E9E6B',
-                confirmButtonText: 'Mengerti'
             });
         }
 

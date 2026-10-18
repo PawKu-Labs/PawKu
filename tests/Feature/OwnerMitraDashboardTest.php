@@ -183,4 +183,106 @@ class OwnerMitraDashboardTest extends TestCase
 
         $response->assertRedirect(route('owner.mitra.dashboard'));
     }
+
+    public function test_mitra_root_redirects_to_owner_mitra_dashboard(): void
+    {
+        $response = $this->withSession($this->ownerSession('any-id'))
+            ->get('/mitra');
+
+        $response->assertRedirect(route('owner.mitra.dashboard'));
+    }
+
+    public function test_owner_can_view_mitra_list(): void
+    {
+        $userId = 'test-owner-uuid';
+
+        DB::table('mitras')->insert([
+            'id' => 'mitra-uuid-1',
+            'owner_id' => $userId,
+            'name' => 'Klinik Sehat Ku',
+            'status' => 'approved',
+            'mitra_type' => 'PAW_HEALTH',
+            'address' => 'Jl. Kucing Sehat No. 10',
+            'created_at' => now(),
+        ]);
+
+        $response = $this->withSession($this->ownerSession($userId))
+            ->get(route('owner.mitra'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Mitra Saya');
+        $response->assertSee('Klinik Sehat Ku');
+    }
+
+    public function test_owner_can_view_pending_mitra_status(): void
+    {
+        $userId = 'test-owner-uuid';
+        $pendingId = '00000000-0000-0000-0000-000000000002';
+
+        DB::table('mitras')->insert([
+            'id' => $pendingId,
+            'owner_id' => $userId,
+            'name' => 'Petshop Baru Menunggu',
+            'status' => 'pending',
+            'mitra_type' => 'PAW_SHOP',
+            'created_at' => now(),
+        ]);
+
+        $response = $this->withSession($this->ownerSession($userId))
+            ->get(route('owner.mitra.status', ['mitra' => $pendingId]));
+
+        $response->assertStatus(200);
+        $response->assertSee('Menunggu persetujuan');
+        $response->assertSee('Petshop Baru Menunggu');
+    }
+
+    public function test_mitra_nested_routes_redirect_to_dashboard_with_tab(): void
+    {
+        $mitraId = '5c706d40-c30c-4c8c-a5cc-5244af718053';
+
+        $response = $this->withSession($this->ownerSession('test-owner-uuid'))
+            ->get("/mitra/{$mitraId}/bookings");
+
+        $response->assertRedirect(route('owner.mitra.dashboard.unit', ['mitra' => $mitraId, 'tab' => 'booking']));
+
+        $response = $this->withSession($this->ownerSession('test-owner-uuid'))
+            ->get("/mitra/{$mitraId}/services");
+
+        $response->assertRedirect(route('owner.mitra.dashboard.unit', ['mitra' => $mitraId, 'tab' => 'layanan']));
+
+        $response = $this->withSession($this->ownerSession('test-owner-uuid'))
+            ->get("/mitra/{$mitraId}/profile");
+
+        $response->assertRedirect(route('owner.mitra.dashboard.unit', ['mitra' => $mitraId, 'tab' => 'profil']));
+    }
+
+    public function test_owner_can_update_booking_status(): void
+    {
+        $userId = 'test-owner-uuid';
+        $mitraId = '5c706d40-c30c-4c8c-a5cc-5244af718053';
+        $bookingId = 'booking-uuid-000000000000000000000001';
+
+        DB::table('mitras')->insert([
+            'id' => $mitraId,
+            'owner_id' => $userId,
+            'name' => 'Klinik Sehat Ku',
+            'status' => 'approved',
+            'created_at' => now(),
+        ]);
+
+        DB::table('bookings')->insert([
+            'id' => $bookingId,
+            'mitra_id' => $mitraId,
+            'status' => 'menunggu',
+            'created_at' => now(),
+        ]);
+
+        $response = $this->withSession($this->ownerSession($userId))
+            ->post(route('owner.mitra.booking.status', ['mitra' => $mitraId, 'booking' => $bookingId]), [
+                'status' => 'dikonfirmasi',
+            ]);
+
+        $response->assertRedirect(route('owner.mitra.dashboard.unit', ['mitra' => $mitraId, 'tab' => 'booking']));
+        $this->assertEquals('dikonfirmasi', DB::table('bookings')->where('id', $bookingId)->value('status'));
+    }
 }
