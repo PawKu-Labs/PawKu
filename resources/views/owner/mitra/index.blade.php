@@ -102,9 +102,8 @@
             <h1 class="page-title">Mitra Saya 🏪</h1>
             <p class="page-sub">Satu akun bisa memiliki beberapa usaha.</p>
         </div>
-        <button type="button" class="btn-add"
-            onclick="Swal.fire({icon:'info',title:'Segera hadir',text:'Formulir pendaftaran mitra tersedia di Sprint 2.'})">+
-            Daftarkan usaha lain</button>
+        <button type="button" class="btn-add"> <a href="{{ route('owner.mitra.create') }}"
+                style="text-decoration:none;display:inline-block;color:white;">+ Daftarkan usaha lain</a></button>
     </div>
 
     @if ($loadError)

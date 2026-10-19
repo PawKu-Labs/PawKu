@@ -7,7 +7,8 @@
         $rejected = $mitra->status === 'rejected';
     @endphp
     <div>
-        <a href="{{ route('owner.mitra') }}" style="font-size:13px;color:var(--primary);text-decoration:none;">← Mitra Saya</a>
+        <a href="{{ route('owner.mitra') }}" style="font-size:13px;color:var(--primary);text-decoration:none;">← Mitra
+            Saya</a>
         <h1 class="page-title" style="margin-top:8px">{{ $mi['icon'] }} {{ $mitra->name }}</h1>
         <p class="page-sub">{{ $mi['label'] }}</p>
     </div>
@@ -30,7 +31,13 @@
             <div style="font-size:13px"><strong>Catatan Anda:</strong> {{ $mitra->owner_note }}</div>
         @endif
         @if (!empty($mitra->resubmitted_at))
-            <div style="font-size:12px;color:var(--muted)">Diajukan ulang: {{ \Illuminate\Support\Carbon::parse($mitra->resubmitted_at)->timezone('Asia/Jakarta')->format('d M Y H:i') }} WIB</div>
+            <div style="font-size:12px;color:var(--muted)">Diajukan ulang:
+                {{ \Illuminate\Support\Carbon::parse($mitra->resubmitted_at)->timezone('Asia/Jakarta')->format('d M Y H:i') }}
+                WIB
+            </div>
+        @endif
+        @if ($mitra->status === 'rejected')
+            <a href="{{ route('owner.mitra.edit', $mitra->id) }}" class="btn-add">Perbaiki &amp; kirim ulang</a>
         @endif
     </div>
 @endsection

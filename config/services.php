@@ -39,6 +39,7 @@ return [
         'url' => env('SUPABASE_URL', 'https://qvaflmgyezrjotbkcild.supabase.co'),
         'anon_key' => env('SUPABASE_ANON_KEY', 'sb_publishable_eRBjvQXnmDt3rhxeiQYi5g_ajVrKEDc'),
         'service_role_key' => env('SUPABASE_SERVICE_ROLE_KEY'),
+        'bucket' => env('SUPABASE_MITRA_BUCKET', 'petshop-photos'),
     ],
 
 ];
