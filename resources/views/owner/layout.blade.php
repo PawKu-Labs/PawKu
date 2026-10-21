@@ -6,29 +6,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title') - PawKu</title>
+    <link rel="icon" href="{{ asset('assets/icon/pawku-nobg.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap"
         rel="stylesheet">
     <style>
+        /* =====================================================
+           Palet PawKu (selaras dengan AppColors di app Flutter)
+           Nama variabel lama dipertahankan agar halaman owner
+           lain tidak rusak.
+           ===================================================== */
         :root {
-            --primary: #2E9E6B;
-            --primary-hover: #24805a;
-            --primary-light: #e6f7ef;
-            --blue: #1677ff;
-            --bg: #f8fafc;
-            --border: #e2e8f0;
-            --heading: #1e293b;
-            --body: #475569;
-            --muted: #8c8c8c;
-            --danger: #ef4444;
-            --warning: #faad14;
+            /* Identitas utama */
+            --primary: #E87D2F;
+            --primary-hover: #C9611A;
+            --primary-dark: #C9611A;
+            --primary-light: #FCE3CC;
+            --brown: #5E2F20;
+
+            /* Latar & garis */
+            --bg: #FDF3E7;
+            --surface: #ffffff;
+            --border: #F0E0D0;
+            --border-strong: #E9D5C2;
+
+            /* Teks */
+            --heading: #5E2F20;
+            --body: #8C6B5D;
+            --muted: #A88B7D;
+
+            /* Status */
+            --success: #2E9E6B;
+            --success-soft: #DDF3E9;
+            --warning: #E8A33D;
+            --warning-soft: #FCEFD6;
+            --danger: #D9534F;
+            --danger-soft: #FBE3E2;
+            --info: #3FA9D6;
+            --info-soft: #DCF3FC;
+            --blue: #3FA9D6;
+
+            /* Warna per fitur */
+            --feeding: #FF9F45;
+            --feeding-soft: #FFEBDA;
+            --bathing: #4EC5F1;
+            --bathing-soft: #DCF3FC;
+            --vaccine: #FF6B8B;
+            --vaccine-soft: #FFE1E7;
+            --weight: #57C785;
+            --weight-soft: #DFF6E7;
+            --booking: #B185DB;
+            --booking-soft: #F0E4FA;
+            --petshop: #FFB100;
+            --petshop-soft: #FFF3D6;
+
+            /* Ukuran */
             --sidebar: 260px;
             --header: 68px;
-            --r: 10px;
-            --rl: 14px;
-            --shadow: 0 1px 2px rgba(0, 0, 0, .03), 0 1px 6px -1px rgba(0, 0, 0, .02)
+            --r: 12px;
+            --rl: 16px;
+            --shadow: 0 1px 2px rgba(94, 47, 32, .04), 0 4px 14px -6px rgba(94, 47, 32, .08)
         }
 
         * {
@@ -50,9 +89,15 @@
             font-family: inherit;
         }
 
+        :focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px
+        }
+
+        /* ---------- Sidebar ---------- */
         .sidebar {
             width: var(--sidebar);
-            background: #fff;
+            background: var(--surface);
             border-right: 1px solid var(--border);
             height: 100vh;
             position: fixed;
@@ -66,35 +111,35 @@
             height: var(--header);
             display: flex;
             align-items: center;
-            padding: 0 24px;
-            border-bottom: 1px solid #f0f2f5;
+            padding: 0 22px;
+            border-bottom: 1px solid var(--border);
             gap: 12px;
             text-decoration: none
         }
 
         .brand img {
-            width: 36px;
-            height: 36px;
+            width: 42px;
+            height: 42px;
             object-fit: contain
         }
 
         .brand-name {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--heading);
-            display: block
+            font-size: 19px;
+            font-weight: 800;
+            color: var(--brown);
+            display: block;
+            line-height: 1.1
         }
 
         .brand-badge {
             font-size: 10px;
             font-weight: 600;
-            color: var(--primary);
+            color: var(--primary-dark);
             background: var(--primary-light);
-            padding: 2px 6px;
-            border-radius: 4px;
+            padding: 2px 8px;
+            border-radius: 20px;
             display: inline-block;
-            margin-top: 2px
+            margin-top: 3px
         }
 
         .menu {
@@ -107,11 +152,9 @@
         }
 
         .menu-label {
-            font-size: 11px;
-            font-weight: 700;
+            font-size: 12px;
+            font-weight: 600;
             color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: .8px;
             padding: 8px 12px 6px
         }
 
@@ -125,28 +168,30 @@
             font-size: 13.5px;
             font-weight: 500;
             border-radius: var(--r);
-            transition: .2s
+            transition: background .2s, color .2s
         }
 
         .menu a:hover {
-            background: #f1f5f9;
-            color: var(--primary)
+            background: var(--bg);
+            color: var(--primary-dark)
         }
 
         .menu a.active {
-            background: var(--primary-light);
-            color: var(--primary);
-            font-weight: 600
+            background: var(--primary);
+            color: #fff;
+            font-weight: 600;
+            box-shadow: 0 4px 10px -4px rgba(232, 125, 47, .6)
         }
 
         .menu svg {
             width: 18px;
-            height: 18px
+            height: 18px;
+            flex-shrink: 0
         }
 
         .side-foot {
             padding: 16px;
-            border-top: 1px solid #f0f2f5
+            border-top: 1px solid var(--border)
         }
 
         .me {
@@ -156,19 +201,19 @@
             padding: 10px 12px;
             border-radius: var(--r);
             background: var(--bg);
-            border: 1px solid #f0f2f5
+            border: 1px solid var(--border)
         }
 
         .avatar {
             width: 38px;
             height: 38px;
             border-radius: 50%;
-            background: var(--border);
+            background: var(--primary-light);
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            color: var(--primary);
+            color: var(--primary-dark);
             flex-shrink: 0;
             overflow: hidden
         }
@@ -195,6 +240,7 @@
             color: var(--muted)
         }
 
+        /* ---------- Area utama ---------- */
         .wrap {
             margin-left: var(--sidebar);
             flex: 1;
@@ -205,7 +251,7 @@
 
         .topbar {
             height: var(--header);
-            background: #fff;
+            background: var(--bg);
             border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
@@ -218,29 +264,29 @@
         }
 
         .btn-logout {
-            background: #fff;
-            border: 1px solid #fee2e2;
+            background: var(--surface);
+            border: 1px solid var(--danger-soft);
             color: var(--danger);
             font-size: 13px;
             font-weight: 600;
-            padding: 8px 16px;
-            border-radius: var(--r);
-            cursor: pointer
+            padding: 8px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background .2s
         }
 
         .btn-logout:hover {
-            background: #fef2f2
+            background: var(--danger-soft)
         }
 
         .content {
             padding: 28px 32px 48px;
             display: flex;
             flex-direction: column;
-            gap: 24px
+            gap: 28px
         }
 
         .page-title {
-            font-family: 'Montserrat', sans-serif;
             font-size: 22px;
             font-weight: 700;
             color: var(--heading)
@@ -252,11 +298,9 @@
         }
 
         .group-title {
-            font-size: 12px;
+            font-size: 15px;
             font-weight: 700;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: .8px;
+            color: var(--heading);
             margin-bottom: 12px
         }
 
@@ -281,8 +325,9 @@
             }
         }
 
+        /* ---------- Kartu ---------- */
         .card {
-            background: #fff;
+            background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--rl);
             padding: 20px 22px;
@@ -304,50 +349,32 @@
         .stat-label {
             font-size: 13px;
             font-weight: 500;
-            color: var(--muted)
+            color: var(--body)
         }
 
         .stat-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 17px
+            font-size: 18px
         }
 
         .stat-value {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 28px;
+            font-size: 30px;
             font-weight: 700;
             color: var(--heading)
         }
 
-        .i-blue {
-            background: #e6f4ff;
-            color: #1677ff
-        }
-
-        .i-green {
-            background: #f6ffed;
-            color: #52c41a
-        }
-
-        .i-gold {
-            background: #fffbe6;
-            color: #faad14
-        }
-
-        .i-red {
-            background: #fff2f0;
-            color: #ff4d4f
-        }
-
-        .i-purple {
-            background: #f9f0ff;
-            color: #722ed1
-        }
+        /* Warna ikon (nama lama dipetakan ke palet Pawku) */
+        .i-primary { background: var(--primary-light); color: var(--primary-dark) }
+        .i-blue    { background: var(--bathing-soft);  color: var(--info) }
+        .i-green   { background: var(--weight-soft);   color: var(--success) }
+        .i-gold    { background: var(--petshop-soft);  color: #B87A00 }
+        .i-red     { background: var(--vaccine-soft);  color: var(--vaccine) }
+        .i-purple  { background: var(--booking-soft);  color: var(--booking) }
 
         .pill {
             display: inline-block;
@@ -358,20 +385,9 @@
         }
 
         .p-active,
-        .p-approved {
-            background: #ecfdf5;
-            color: #065f46
-        }
-
-        .p-pending {
-            background: #fffbe6;
-            color: #ad6800
-        }
-
-        .p-rejected {
-            background: #fff2f0;
-            color: #cf1322
-        }
+        .p-approved { background: var(--success-soft); color: #1d6b49 }
+        .p-pending  { background: var(--warning-soft); color: #9a6410 }
+        .p-rejected { background: var(--danger-soft);  color: #a63a37 }
 
         .alert {
             padding: 12px 16px;
@@ -381,15 +397,51 @@
         }
 
         .alert-ok {
-            background: #f6ffed;
-            border: 1px solid #b7eb8f;
-            color: #237804
+            background: var(--success-soft);
+            border: 1px solid #b6e3cf;
+            color: #1d6b49
         }
 
         .alert-err {
-            background: #fff2f0;
-            border: 1px solid #ffccc7;
-            color: #a8071a
+            background: var(--danger-soft);
+            border: 1px solid #f3c4c2;
+            color: #a63a37
+        }
+
+        /* ---------- Tombol umum (bentuk pil seperti di app) ---------- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 30px;
+            border: 1px solid transparent;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background .2s
+        }
+
+        .btn-primary { background: var(--primary); color: #fff }
+        .btn-primary:hover { background: var(--primary-hover) }
+        .btn-outline { background: transparent; color: var(--primary); border-color: var(--primary) }
+        .btn-outline:hover { background: var(--primary-light) }
+
+        input[type=text], input[type=email], input[type=password], input[type=number],
+        input[type=date], select, textarea {
+            border: 1px solid var(--border-strong);
+            border-radius: 12px;
+            background: #fff;
+            color: var(--heading);
+            padding: 10px 14px
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(232, 125, 47, .18)
         }
 
         @media(max-width:768px) {
@@ -409,7 +461,12 @@
                 padding: 20px 16px 48px;
             }
         }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important }
+        }
     </style>
+    @stack('styles')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
@@ -422,10 +479,10 @@
         <a href="{{ route('owner.dashboard') }}" class="brand">
             <img src="{{ asset('assets/icon/pawku-nobg.png') }}" alt="PawKu"
                 onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/fashaputri/asset/main/pawku.png';">
-            <div><span class="brand-name">PawKu</span><span class="brand-badge">PEMILIK KUCING</span></div>
+            <div><span class="brand-name">PawKu</span><span class="brand-badge">Pemilik Kucing</span></div>
         </a>
         <nav class="menu">
-            <div class="menu-label">Menu Utama</div>
+            <div class="menu-label">Menu utama</div>
             <a href="{{ route('owner.dashboard') }}"
                 class="{{ request()->routeIs('owner.dashboard') ? 'active' : '' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -482,15 +539,28 @@
         </main>
     </div>
     <script>
+        const pawkuSwal = {
+            confirmButtonColor: '#E87D2F',
+            cancelButtonColor: '#8C6B5D',
+            color: '#5E2F20',
+            background: '#ffffff',
+            customClass: {
+                popup: 'swal-pawku',
+                confirmButton: 'swal-pawku-btn',
+                cancelButton: 'swal-pawku-btn',
+            },
+        };
+
         function confirmLogout() {
             Swal.fire({
+                ...pawkuSwal,
                 title: 'Keluar dari akun?',
                 text: 'Sesi Anda akan dihapus dan Anda harus login kembali.',
                 icon: 'warning',
+                iconColor: '#E8A33D',
                 showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#64748b',
-                confirmButtonText: 'Ya, Keluar',
+                confirmButtonColor: '#D9534F',
+                confirmButtonText: 'Ya, keluar',
                 cancelButtonText: 'Batal',
                 reverseButtons: true,
             }).then((result) => {
@@ -503,7 +573,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             @if (session('success'))
                 Swal.fire({
+                    ...pawkuSwal,
                     icon: 'success',
+                    iconColor: '#2E9E6B',
                     title: 'Berhasil!',
                     text: @js(session('success')),
                     timer: 3000,
@@ -514,7 +586,9 @@
             @endif
             @if (session('error'))
                 Swal.fire({
+                    ...pawkuSwal,
                     icon: 'error',
+                    iconColor: '#D9534F',
                     title: 'Gagal!',
                     text: @js(session('error')),
                     timer: 4000,
@@ -525,6 +599,10 @@
             @endif
         });
     </script>
+    <style>
+        .swal-pawku { border-radius: 16px; font-family: 'Montserrat', sans-serif }
+        .swal-pawku-btn { border-radius: 30px !important; font-weight: 600 !important }
+    </style>
     @stack('scripts')
 </body>
 
