@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminBackupController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MitraDashboardController;
+use App\Http\Controllers\OwnerCatController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\OwnerMitraController;
 use App\Http\Controllers\SuperAdminController;
@@ -46,6 +47,19 @@ Route::middleware('auth')->group(function () {
     Route::prefix('owner')->name('owner.')->middleware('role:pemilik_kucing,mitra')->group(function () {
         Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('dashboard');
         Route::get('/vaccine-calculator', [OwnerDashboardController::class, 'vaccineCalculator'])->name('vaccine.calculator');
+
+        // PROFIL KUCING (kepemilikan diverifikasi di controller: owner_id = user session)
+        Route::prefix('cats')->name('cats.')->group(function () {
+            Route::get('/', [OwnerCatController::class, 'index'])->name('index');
+            Route::get('/create', [OwnerCatController::class, 'create'])->name('create');
+            Route::post('/', [OwnerCatController::class, 'store'])->middleware('throttle:20,1')->name('store');
+            Route::get('/{cat}/edit', [OwnerCatController::class, 'edit'])
+                ->where('cat', UUID_PATTERN)->name('edit');
+            Route::put('/{cat}', [OwnerCatController::class, 'update'])
+                ->where('cat', UUID_PATTERN)->middleware('throttle:20,1')->name('update');
+            Route::delete('/{cat}', [OwnerCatController::class, 'destroy'])
+                ->where('cat', UUID_PATTERN)->middleware('throttle:20,1')->name('destroy');
+        });
     });
 
     // MENU MITRA di sisi owner (daftar, status, dashboard, aksi booking)
