@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminBackupController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MitraDashboardController;
+use App\Http\Controllers\OwnerBookingController;
 use App\Http\Controllers\OwnerCatController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\OwnerMitraController;
@@ -47,6 +48,9 @@ Route::middleware('auth')->group(function () {
     Route::prefix('owner')->name('owner.')->middleware('role:pemilik_kucing,mitra')->group(function () {
         Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('dashboard');
         Route::get('/vaccine-calculator', [OwnerDashboardController::class, 'vaccineCalculator'])->name('vaccine.calculator');
+
+        // RIWAYAT BOOKING (owner_id = user session, diverifikasi di controller)
+        Route::get('/bookings', [OwnerBookingController::class, 'index'])->name('bookings.index');
 
         // PROFIL KUCING (kepemilikan diverifikasi di controller: owner_id = user session)
         Route::prefix('cats')->name('cats.')->group(function () {

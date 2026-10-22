@@ -1,75 +1,162 @@
 @extends('owner.layout')
 @section('title', 'Dashboard')
 
+@push('styles')
+    <style>
+        .dash-section {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            color: var(--heading);
+            margin: 26px 0 12px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 22px 24px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .stat-label {
+            font-size: 13.5px;
+            color: var(--muted);
+        }
+
+        .stat-value {
+            font-size: 34px;
+            font-weight: 800;
+            color: var(--heading);
+            margin-top: 14px;
+            line-height: 1;
+        }
+
+        .stat-ico {
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            background: var(--accent);
+            box-shadow: 0 6px 14px color-mix(in srgb, var(--accent) 35%, transparent);
+        }
+
+        .quick-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .quick-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 6px;
+            padding: 26px 16px;
+            text-decoration: none;
+            color: inherit;
+            transition: transform .2s, box-shadow .2s, border-color .2s;
+        }
+
+        .quick-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, .08);
+            border-color: var(--accent);
+        }
+
+        .quick-ico {
+            font-size: 38px;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .quick-title {
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--heading);
+        }
+
+        .quick-card:hover .quick-title {
+            color: var(--accent);
+        }
+
+        .quick-desc {
+            font-size: 12.5px;
+            color: var(--muted);
+        }
+    </style>
+@endpush
+
 @section('content')
-    <div>
-        <h1 class="page-title">Selamat Datang, {{ $profile['full_name'] ?? $profile['username'] ?? 'Pemilik Kucing' }}! 🐱
-        </h1>
-        <p class="page-sub">Kelola profil kucing dan pantau jadwal grooming Anda.</p>
+    @php
+        $displayName = $profile['full_name'] ?? ($profile['username'] ?? ($user['email'] ?? 'Pengguna'));
+    @endphp
+
+    <h1 class="page-title">Selamat Datang, {{ $displayName }}! 😺</h1>
+    <p class="page-sub">Kelola profil kucing dan pantau jadwal grooming Anda.</p>
+
+    <div class="dash-section">Ringkasan</div>
+    <div class="stat-grid">
+        <div class="card stat-card" style="--accent:#2E9E6B;">
+            <div>
+                <div class="stat-label">Kucing Saya</div>
+                <div class="stat-value">{{ $stats['cats'] }}</div>
+            </div>
+            <div class="stat-ico">🐾</div>
+        </div>
+
+        <div class="card stat-card" style="--accent:#F59E0B;">
+            <div>
+                <div class="stat-label">Total Booking</div>
+                <div class="stat-value">{{ $stats['bookings'] }}</div>
+            </div>
+            <div class="stat-ico">📅</div>
+        </div>
+
+        <div class="card stat-card" style="--accent:#F5A623;">
+            <div>
+                <div class="stat-label">Booking Mendatang</div>
+                <div class="stat-value">{{ $stats['upcoming_bookings'] }}</div>
+            </div>
+            <div class="stat-ico">⏳</div>
+        </div>
     </div>
 
-    <section>
-        <div class="group-title">Ringkasan</div>
-        <div class="grid g3">
-            <div class="card stat">
-                <div class="stat-top">
-                    <span class="stat-label">Kucing Saya</span>
-                    <div class="stat-icon i-green">🐾</div>
-                </div>
-                <div class="stat-value">{{ number_format($stats['cats']) }}</div>
-            </div>
-            <div class="card stat">
-                <div class="stat-top">
-                    <span class="stat-label">Total Booking</span>
-                    <div class="stat-icon i-blue">📅</div>
-                </div>
-                <div class="stat-value">{{ number_format($stats['bookings']) }}</div>
-            </div>
-            <div class="card stat">
-                <div class="stat-top">
-                    <span class="stat-label">Booking Mendatang</span>
-                    <div class="stat-icon i-gold">⏳</div>
-                </div>
-                <div class="stat-value">{{ number_format($stats['upcoming_bookings']) }}</div>
-            </div>
-        </div>
-    </section>
+    <div class="dash-section">Aksi Cepat</div>
+    <div class="quick-grid">
+        <a href="{{ route('owner.cats.index') }}" class="card quick-card" style="--accent:#F59E0B;">
+            <span class="quick-ico">😺</span>
+            <span class="quick-title">Profil Kucing</span>
+            <span class="quick-desc">Lihat profil kucing Anda</span>
+        </a>
 
-    <section>
-        <div class="group-title">Aksi Cepat</div>
-        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
-            <a href="{{ route('owner.cats.index') }}" class="card"
-                style="text-align:center; padding:28px 20px; text-decoration:none; display:block; transition:transform .2s, box-shadow .2s;">
-                <div style="font-size:36px; margin-bottom:10px;">🐱</div>
-                <p style="font-weight:600; color:var(--heading); margin-bottom:4px;">Profil Kucing</p>
-                <p style="font-size:12px; color:var(--muted);">Lihat profil kucing Anda</p>
-            </a>
-            <a href="{{ route('owner.vaccine.calculator') }}" class="card"
-                style="text-align:center; padding:28px 20px; text-decoration:none; display:block; transition:transform .2s, box-shadow .2s;">
-                <div style="font-size:36px; margin-bottom:10px;">💉</div>
-                <p style="font-weight:600; color:var(--heading); margin-bottom:4px;">Kalkulator Vaksin</p>
-                <p style="font-size:12px; color:var(--muted);">Hitung jadwal vaksinasi kucing</p>
-            </a>
-            <div class="card" style="text-align:center; padding:28px 20px;">
-                <div style="font-size:36px; margin-bottom:10px;">📋</div>
-                <p style="font-weight:600; color:var(--heading); margin-bottom:4px;">Riwayat Booking</p>
-                <p style="font-size:12px; color:var(--muted);">Lihat riwayat booking grooming</p>
-            </div>
-            @if ($layoutHasMitra ?? false)
-                <a href="{{ route('owner.mitra') }}" class="card"
-                    style="text-align:center; padding:28px 20px; text-decoration:none; display:block; transition:transform .2s, box-shadow .2s; border-color: rgba(46, 158, 107, 0.4); background: #fbfdfc;">
-                    <div style="font-size:36px; margin-bottom:10px;">🏪</div>
-                    <p style="font-weight:600; color:var(--primary); margin-bottom:4px;">Mitra Saya</p>
-                    <p style="font-size:12px; color:var(--muted);">Kelola petshop & booking masuk</p>
-                </a>
-            @else
-                <div class="card" onclick="showMitraDisabledInfo()"
-                    style="text-align:center; padding:28px 20px; cursor:not-allowed; opacity: 0.65; background:#fafafa;">
-                    <div style="font-size:36px; margin-bottom:10px; filter: grayscale(1);">🏪</div>
-                    <p style="font-weight:600; color:var(--muted); margin-bottom:4px;">Dashboard Mitra</p>
-                    <p style="font-size:12px; color:var(--muted);">Terkunci (Belum Terdaftar)</p>
-                </div>
-            @endif
-        </div>
-    </section>
+        <a href="{{ route('owner.vaccine.calculator') }}" class="card quick-card" style="--accent:#3B82F6;">
+            <span class="quick-ico">💉</span>
+            <span class="quick-title">Kalkulator Vaksin</span>
+            <span class="quick-desc">Hitung jadwal vaksinasi kucing</span>
+        </a>
+
+        <a href="{{ route('owner.bookings.index') }}" class="card quick-card" style="--accent:#8B5CF6;">
+            <span class="quick-ico">📋</span>
+            <span class="quick-title">Riwayat Booking</span>
+            <span class="quick-desc">Lihat riwayat booking grooming</span>
+        </a>
+
+        <a href="{{ route('owner.mitra') }}" class="card quick-card" style="--accent:#14B8A6;">
+            <span class="quick-ico">🏪</span>
+            <span class="quick-title">Mitra Saya</span>
+            <span class="quick-desc">Kelola petshop &amp; booking masuk</span>
+        </a>
+    </div>
 @endsection
