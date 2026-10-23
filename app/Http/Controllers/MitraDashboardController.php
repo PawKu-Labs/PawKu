@@ -9,6 +9,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -187,6 +188,125 @@ class MitraDashboardController extends Controller
     }
 
     // ---------------------------------------------------------------------
+    // Service CRUD
+    // ---------------------------------------------------------------------
+
+    /** Preset nama layanan per jenis mitra (mirror dari Flutter mitraTypeInfo). */
+    private const SERVICE_PRESETS = [
+        'PAW_HEALTH' => ['Konsultasi Umum', 'Vaksinasi', 'Sterilisasi', 'Pemeriksaan Gigi', 'Pemeriksaan Mata & Telinga', 'Rawat Inap', 'Operasi Minor', 'Cek Darah & Lab'],
+        'PAW_GROOMING' => ['Grooming Basic', 'Grooming Full', 'Mandi + Blow', 'Potong Kuku', 'Bersihkan Telinga', 'Potong Bulu Wajah', 'Spa Kucing'],
+        'PAW_HOTEL' => ['Kamar Standard', 'Kamar Deluxe', 'Kamar VIP', 'Suite'],
+        'PAW_SHOP' => ['Konsultasi Nutrisi', 'Jasa Pengiriman', 'Paket Makanan Bulanan', 'Aksesoris Custom'],
+    ];
+
+    public function storeService(Request $request, string $mitra): RedirectResponse
+    {
+        $activeMitra = $this->verifyMitraOwner($request, $mitra);
+        $back = $this->backToLayanan($mitra);
+
+        $isHotel = strtoupper($activeMitra->mitra_type ?? '') === 'PAW_HOTEL';
+        $data = $this->validateServiceRequest($request, $isHotel);
+
+        try {
+            DB::table(self::T_SERVICES)->insert([
+                'id' => Str::uuid()->toString(),
+                'mitra_id' => $activeMitra->id,
+                'name' => $data['name'],
+                'price' => $data['price'],
+                'duration_minutes' => $data['duration_minutes'] ?? null,
+                'capacity' => $data['capacity'] ?? null,
+                'cats_per_room' => $data['cats_per_room'] ?? null,
+                'room_class' => $data['room_class'] ?? null,
+                'facilities' => $this->pgArray($data['facilities'] ?? []),
+                'checkin_time' => $data['checkin_time'] ?? null,
+                'checkout_time' => $data['checkout_time'] ?? null,
+                'is_active' => true,
+                'created_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return $back->with('error', 'Gagal menyimpan layanan. Coba lagi.');
+        }
+
+        return $back->with('success', 'Layanan "'.$data['name'].'" berhasil ditambahkan.');
+    }
+
+    public function updateService(Request $request, string $mitra, string $service): RedirectResponse
+    {
+        $activeMitra = $this->verifyMitraOwner($request, $mitra);
+        $back = $this->backToLayanan($mitra);
+
+        $row = DB::table(self::T_SERVICES)->where('id', $service)->where('mitra_id', $activeMitra->id)->first();
+        abort_if(! $row, 404);
+
+        $isHotel = strtoupper($activeMitra->mitra_type ?? '') === 'PAW_HOTEL';
+        $data = $this->validateServiceRequest($request, $isHotel);
+
+        try {
+            DB::table(self::T_SERVICES)->where('id', $service)->update([
+                'name' => $data['name'],
+                'price' => $data['price'],
+                'duration_minutes' => $data['duration_minutes'] ?? null,
+                'capacity' => $data['capacity'] ?? null,
+                'cats_per_room' => $data['cats_per_room'] ?? null,
+                'room_class' => $data['room_class'] ?? null,
+                'facilities' => $this->pgArray($data['facilities'] ?? []),
+                'checkin_time' => $data['checkin_time'] ?? null,
+                'checkout_time' => $data['checkout_time'] ?? null,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return $back->with('error', 'Gagal memperbarui layanan. Coba lagi.');
+        }
+
+        return $back->with('success', 'Layanan "'.$data['name'].'" berhasil diperbarui.');
+    }
+
+    public function destroyService(Request $request, string $mitra, string $service): RedirectResponse
+    {
+        $activeMitra = $this->verifyMitraOwner($request, $mitra);
+        $back = $this->backToLayanan($mitra);
+
+        $row = DB::table(self::T_SERVICES)->where('id', $service)->where('mitra_id', $activeMitra->id)->first();
+        abort_if(! $row, 404);
+
+        try {
+            DB::table(self::T_SERVICES)->where('id', $service)->delete();
+        } catch (\Throwable $e) {
+            report($e);
+
+            return $back->with('error', 'Gagal menghapus layanan. Coba lagi.');
+        }
+
+        return $back->with('success', 'Layanan "'.$row->name.'" berhasil dihapus.');
+    }
+
+    public function toggleService(Request $request, string $mitra, string $service): RedirectResponse
+    {
+        $activeMitra = $this->verifyMitraOwner($request, $mitra);
+        $back = $this->backToLayanan($mitra);
+
+        $row = DB::table(self::T_SERVICES)->where('id', $service)->where('mitra_id', $activeMitra->id)->first();
+        abort_if(! $row, 404);
+
+        $newState = ! ((bool) ($row->is_active ?? true));
+
+        try {
+            DB::table(self::T_SERVICES)->where('id', $service)->update(['is_active' => $newState]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return $back->with('error', 'Gagal mengubah status layanan. Coba lagi.');
+        }
+
+        $label = $newState ? 'diaktifkan' : 'dinonaktifkan';
+
+        return $back->with('success', 'Layanan "'.$row->name.'" berhasil '.$label.'.');
+    }
+
+    // ---------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------
 
@@ -318,5 +438,84 @@ class MitraDashboardController extends Controller
 
             return $fallback;
         }
+    }
+
+    /** Verify mitra belongs to the authenticated owner and return it. Aborts 403/404 otherwise. */
+    private function verifyMitraOwner(Request $request, string $mitra): object
+    {
+        $userId = $request->session()->get('supabase.user.id');
+        $row = $this->safe(
+            fn () => DB::table('mitras')->where('id', strtolower($mitra))->where('owner_id', $userId)->first(),
+            null
+        );
+        abort_if(! $row, 404);
+        abort_if($row->status !== 'approved', 403);
+
+        return $row;
+    }
+
+    private function backToLayanan(string $mitra): RedirectResponse
+    {
+        $route = Route::has('owner.mitra.dashboard.unit')
+            ? route('owner.mitra.dashboard.unit', ['mitra' => strtolower($mitra), 'tab' => 'layanan'])
+            : route('owner.mitra.dashboard', ['mitra' => strtolower($mitra), 'tab' => 'layanan']);
+
+        return redirect($route);
+    }
+
+    /** Validate and normalise a service form request. */
+    private function validateServiceRequest(Request $request, bool $isHotel): array
+    {
+        $rules = [
+            'name' => ['required', 'string', 'max:120'],
+            'price' => ['required', 'numeric', 'min:1'],
+            'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:1440'],
+            'capacity' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'cats_per_room' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'room_class' => ['nullable', 'string', 'max:60'],
+            'facilities' => ['nullable', 'array'],
+            'facilities.*' => ['string', 'max:40'],
+            'checkin_time' => ['nullable', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'],
+            'checkout_time' => ['nullable', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'],
+        ];
+
+        $data = $request->validate($rules);
+
+        // Normalise time fields to HH:MM:SS
+        foreach (['checkin_time', 'checkout_time'] as $field) {
+            if (! empty($data[$field]) && strlen($data[$field]) === 5) {
+                $data[$field] .= ':00';
+            }
+        }
+
+        if ($isHotel) {
+            $data['duration_minutes'] = null;
+        } else {
+            $data['capacity'] = null;
+            $data['cats_per_room'] = null;
+            $data['room_class'] = null;
+            $data['facilities'] = [];
+            $data['checkin_time'] = null;
+            $data['checkout_time'] = null;
+        }
+
+        return $data;
+    }
+
+    /**
+     * Convert a PHP array of strings to a PostgreSQL array literal string,
+     * e.g. ["AC","WiFi"] → '{"AC","WiFi"}'.
+     */
+    private function pgArray(array $items): string
+    {
+        if (empty($items)) {
+            return '{}';
+        }
+
+        $escaped = array_map(function (string $item): string {
+            return '"'.addcslashes($item, '"\\').'"';
+        }, $items);
+
+        return '{'.implode(',', $escaped).'}';
     }
 }

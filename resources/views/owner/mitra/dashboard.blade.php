@@ -535,50 +535,147 @@
 {{-- TAB 3: LAYANAN --}}
 <div id="panel-layanan" class="tab-panel {{ $currentTab === 'layanan' ? 'active' : '' }}">
     <section>
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+        @php
+            $mitraType = strtoupper($activeMitra->mitra_type ?? 'PAW_SHOP');
+            $isHotel   = $mitraType === 'PAW_HOTEL';
+
+            $typeAccent = [
+                'PAW_HEALTH'   => ['color' => '#0284c7', 'soft' => '#e0f2fe', 'icon' => '🏥', 'label' => 'Klinik Hewan'],
+                'PAW_GROOMING' => ['color' => '#9333ea', 'soft' => '#f3e8ff', 'icon' => '✂️', 'label' => 'Grooming'],
+                'PAW_HOTEL'    => ['color' => '#d97706', 'soft' => '#fef3c7', 'icon' => '🏨', 'label' => 'Hotel'],
+                'PAW_SHOP'     => ['color' => '#16a34a', 'soft' => '#dcfce7', 'icon' => '🏪', 'label' => 'Shop'],
+            ];
+            $accent = $typeAccent[$mitraType] ?? $typeAccent['PAW_SHOP'];
+
+            $servicePresets = [
+                'PAW_HEALTH'   => ['Konsultasi Umum', 'Vaksinasi', 'Sterilisasi', 'Pemeriksaan Gigi', 'Pemeriksaan Mata & Telinga', 'Rawat Inap', 'Operasi Minor', 'Cek Darah & Lab'],
+                'PAW_GROOMING' => ['Grooming Basic', 'Grooming Full', 'Mandi + Blow', 'Potong Kuku', 'Bersihkan Telinga', 'Potong Bulu Wajah', 'Spa Kucing'],
+                'PAW_HOTEL'    => ['Kamar Standard', 'Kamar Deluxe', 'Kamar VIP', 'Suite'],
+                'PAW_SHOP'     => ['Konsultasi Nutrisi', 'Jasa Pengiriman', 'Paket Makanan Bulanan', 'Aksesoris Custom'],
+            ];
+            $presets = $servicePresets[$mitraType] ?? [];
+
+            $roomClasses   = ['Standard', 'Deluxe', 'VIP', 'Executive', 'Suite'];
+            $facilityPresets = ['AC', 'WiFi', 'CCTV', 'Tempat Tidur Khusus', 'Mainan', 'Litter Box Pribadi', 'Webcam Live', 'Makan 2x/hari', 'Makan 3x/hari', 'Vitamin Harian', 'Laporan Harian', 'Kipas Angin'];
+
+            // Parse PostgreSQL array literal "{a,b}" → PHP array
+            $parseFacilities = function ($raw): array {
+                if (! $raw || $raw === '{}') {
+                    return [];
+                }
+                $str = trim($raw, '{}');
+                if ($str === '') {
+                    return [];
+                }
+                // Handle quoted items
+                preg_match_all('/"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"|([^,]+)/', $str, $m);
+                $items = [];
+                foreach ($m[0] as $i => $full) {
+                    $items[] = $m[1][$i] !== '' ? $m[1][$i] : trim($m[2][$i] ?? $full);
+                }
+
+                return array_filter(array_map('trim', $items), fn ($v) => $v !== '');
+            };
+        @endphp
+
+        {{-- Header row --}}
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
             <div>
-                <h2 style="font-size: 18px; font-weight: 700; color: var(--heading);">Katalog Layanan Petshop</h2>
-                <p style="font-size: 13px; color: var(--muted);">Daftar layanan yang disediakan oleh {{ $activeMitra->name }}.</p>
+                <h2 style="font-size:18px;font-weight:700;color:var(--heading);">
+                    {{ $isHotel ? 'Tipe Kamar' : 'Katalog Layanan' }}
+                </h2>
+                <p style="font-size:13px;color:var(--muted);margin-top:2px;">
+                    Tambah, edit, atau nonaktifkan layanan {{ $activeMitra->name }}.
+                </p>
             </div>
-            <div style="font-size: 12.5px; font-weight: 600; color: var(--muted);">
-                Total: <strong style="color: var(--heading);">{{ $services->count() }} Layanan</strong>
-            </div>
+            <button type="button" id="btn-add-service" onclick="openServiceModal()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:{{ $accent['color'] }};color:#fff;border:none;border-radius:10px;font-size:13.5px;font-weight:700;cursor:pointer;transition:.2s;box-shadow:0 4px 12px {{ $accent['color'] }}44;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Tambah {{ $isHotel ? 'Tipe Kamar' : 'Layanan' }}
+            </button>
         </div>
 
+        {{-- Service cards --}}
         @if ($services->isEmpty())
-            <div class="card" style="text-align: center; padding: 48px 20px; color: var(--muted);">
-                <div style="font-size: 40px; margin-bottom: 10px;">✂️</div>
-                <h3 style="font-size: 16px; font-weight: 700; color: var(--heading); margin-bottom: 4px;">Belum Ada Layanan Terdaftar</h3>
-                <p style="font-size: 13px;">Belum ada item layanan yang ditambahkan pada petshop ini.</p>
+            <div class="card" style="text-align:center;padding:56px 20px;color:var(--muted);">
+                <div style="font-size:44px;margin-bottom:12px;">{{ $accent['icon'] }}</div>
+                <h3 style="font-size:16px;font-weight:700;color:var(--heading);margin-bottom:6px;">
+                    Belum Ada {{ $isHotel ? 'Tipe Kamar' : 'Layanan' }} Terdaftar
+                </h3>
+                <p style="font-size:13px;margin-bottom:20px;">Klik tombol di atas untuk menambahkan layanan pertama.</p>
+                <button type="button" onclick="openServiceModal()" style="padding:10px 22px;background:{{ $accent['color'] }};color:#fff;border:none;border-radius:10px;font-size:13.5px;font-weight:700;cursor:pointer;">
+                    + Tambah Sekarang
+                </button>
             </div>
         @else
             <div class="grid g3">
                 @foreach ($services as $svc)
-                    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; gap: 14px;">
+                    @php
+                        $active = (bool) ($svc->is_active ?? true);
+                        $svFacilities = $parseFacilities($svc->facilities ?? '{}');
+                    @endphp
+                    <div class="card" id="svc-card-{{ $svc->id }}" style="display:flex;flex-direction:column;justify-content:space-between;gap:14px;opacity:{{ $active ? '1' : '0.65' }};transition:.2s;">
                         <div>
-                            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
-                                <h3 style="font-size: 15.5px; font-weight: 700; color: var(--heading);">{{ $svc->name }}</h3>
-                                @if ($svc->is_active ?? true)
-                                    <span class="pill p-approved" style="font-size: 10px;">Aktif</span>
-                                @else
-                                    <span class="pill p-rejected" style="font-size: 10px;">Nonaktif</span>
-                                @endif
+                            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px;">
+                                <h3 style="font-size:15px;font-weight:700;color:var(--heading);">{{ $svc->name }}</h3>
+                                <span class="pill {{ $active ? 'p-approved' : 'p-rejected' }}" style="font-size:10px;flex-shrink:0;">
+                                    {{ $active ? 'Aktif' : 'Nonaktif' }}
+                                </span>
                             </div>
-                            <div style="font-size: 19px; font-weight: 800; color: var(--primary); margin: 10px 0 6px;">
+
+                            {{-- Room class badge --}}
+                            @if (!empty($svc->room_class))
+                                <div style="margin-bottom:6px;">
+                                    <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:{{ $accent['soft'] }};color:{{ $accent['color'] }};">
+                                        {{ $svc->room_class }}
+                                    </span>
+                                </div>
+                            @endif
+
+                            <div style="font-size:20px;font-weight:800;color:{{ $accent['color'] }};margin:8px 0 6px;">
                                 Rp {{ number_format((float) ($svc->price ?? 0), 0, ',', '.') }}
                             </div>
+
                             @if (!empty($svc->duration_minutes))
-                                <div style="font-size: 12.5px; color: var(--muted);">⏱️ Durasi: <strong>{{ $svc->duration_minutes }} menit</strong></div>
+                                <div style="font-size:12.5px;color:var(--muted);margin-bottom:3px;">⏱️ Durasi: <strong>{{ $svc->duration_minutes }} menit</strong></div>
                             @endif
                             @if (!empty($svc->capacity))
-                                <div style="font-size: 12.5px; color: var(--muted); margin-top: 2px;">👥 Kuota: <strong>{{ $svc->capacity }} kucing / slot</strong></div>
+                                <div style="font-size:12.5px;color:var(--muted);margin-bottom:3px;">🏠 Kamar: <strong>{{ $svc->capacity }}</strong> × <strong>{{ $svc->cats_per_room ?? 1 }} kucing</strong></div>
                             @endif
-                            @if (!empty($svc->room_class))
-                                <div style="font-size: 12.5px; color: var(--muted); margin-top: 2px;">🏠 Kelas: <strong>{{ $svc->room_class }}</strong></div>
+                            @if (!empty($svc->checkin_time))
+                                <div style="font-size:12.5px;color:var(--muted);margin-bottom:3px;">
+                                    🕐 Check-in: <strong>{{ substr($svc->checkin_time, 0, 5) }}</strong>
+                                    &nbsp;|&nbsp; Check-out: <strong>{{ substr($svc->checkout_time ?? '', 0, 5) }}</strong>
+                                </div>
+                            @endif
+                            @if (!empty($svFacilities))
+                                <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;">
+                                    @foreach (array_slice($svFacilities, 0, 5) as $fac)
+                                        <span style="font-size:11px;padding:2px 7px;background:#f1f5f9;border-radius:5px;color:var(--body);">{{ $fac }}</span>
+                                    @endforeach
+                                    @if (count($svFacilities) > 5)
+                                        <span style="font-size:11px;padding:2px 7px;background:#f1f5f9;border-radius:5px;color:var(--muted);">+{{ count($svFacilities) - 5 }} lagi</span>
+                                    @endif
+                                </div>
                             @endif
                         </div>
-                        <div style="font-size: 11px; color: var(--muted); border-top: 1px solid #f1f5f9; padding-top: 8px;">
-                            ID Layanan: {{ substr((string) $svc->id, 0, 8) }}...
+
+                        {{-- Actions --}}
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid #f1f5f9;padding-top:10px;">
+                            <button type="button"
+                                onclick="openServiceModal({{ json_encode(['id'=>$svc->id,'name'=>$svc->name,'price'=>(int)$svc->price,'duration_minutes'=>$svc->duration_minutes,'capacity'=>$svc->capacity,'cats_per_room'=>$svc->cats_per_room,'room_class'=>$svc->room_class,'facilities'=>$svFacilities,'checkin_time'=>substr((string)($svc->checkin_time??''),0,5),'checkout_time'=>substr((string)($svc->checkout_time??''),0,5)]) }})"
+                                class="btn-action-sm btn-serve">✏️ Edit</button>
+
+                            <form action="{{ route('owner.mitra.service.toggle', ['mitra' => $mitraId, 'service' => $svc->id]) }}" method="POST" style="display:inline;">
+                                @csrf @method('PATCH')
+                                <button type="submit" class="btn-action-sm {{ $active ? 'btn-finish' : 'btn-confirm' }}">
+                                    {{ $active ? '⏸ Nonaktifkan' : '▶ Aktifkan' }}
+                                </button>
+                            </form>
+
+                            <form action="{{ route('owner.mitra.service.destroy', ['mitra' => $mitraId, 'service' => $svc->id]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Hapus layanan \"{{ addslashes($svc->name) }}\"? Tindakan ini tidak dapat dibatalkan.')">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="btn-action-sm btn-reject">🗑 Hapus</button>
+                            </form>
                         </div>
                     </div>
                 @endforeach
@@ -586,6 +683,171 @@
         @endif
     </section>
 </div>
+
+{{-- ====== MODAL TAMBAH / EDIT LAYANAN ====== --}}
+<div id="service-modal" class="modal-overlay" onclick="closeServiceModal()">
+    <div class="modal-box" style="max-width:560px;max-height:92vh;" onclick="event.stopPropagation()">
+
+        {{-- Modal header --}}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div id="svc-modal-icon" style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;background:{{ $accent['soft'] }};flex-shrink:0;">
+                    {{ $accent['icon'] }}
+                </div>
+                <div>
+                    <h3 id="svc-modal-title" style="font-size:16px;font-weight:700;color:var(--heading);">Tambah Layanan</h3>
+                    <p style="font-size:12px;color:var(--muted);">Isi detail layanan di bawah ini</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeServiceModal()" style="background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1;">✕</button>
+        </div>
+
+        {{-- Form --}}
+        <form id="svc-modal-form" method="POST" action="{{ route('owner.mitra.service.store', $mitraId) }}">
+            @csrf
+            <input type="hidden" id="svc-form-method" name="_method" value="">
+
+            <div style="display:flex;flex-direction:column;gap:16px;">
+
+                {{-- Nama layanan --}}
+                <div>
+                    <label class="svc-label">{{ $isHotel ? 'Tipe Kamar' : 'Nama Layanan' }}</label>
+                    <select id="svc-preset-select" name="_preset" onchange="handlePresetChange(this.value)" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;color:var(--heading);background:#fff;margin-bottom:8px;">
+                        <option value="">— Pilih {{ $isHotel ? 'tipe' : 'jenis' }} layanan —</option>
+                        @foreach ($presets as $p)
+                            <option value="{{ $p }}">{{ $p }}</option>
+                        @endforeach
+                        <option value="__manual__">Lainnya (isi manual)</option>
+                    </select>
+                    <input type="text" id="svc-name-manual" name="name" placeholder="{{ $isHotel ? 'Misal: Suite Premium' : 'Nama layanan lainnya...' }}"
+                        style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;display:none;box-sizing:border-box;">
+                </div>
+
+                {{-- Harga --}}
+                <div>
+                    <label class="svc-label">{{ $isHotel ? 'Harga per Kucing per Malam (Rp)' : 'Harga per Kucing (Rp)' }}</label>
+                    <input type="number" id="svc-price" name="price" min="1" placeholder="Misal: 80000" required
+                        style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;box-sizing:border-box;">
+                </div>
+
+                @if (!$isHotel)
+                    {{-- Durasi --}}
+                    <div>
+                        <label class="svc-label">Durasi Layanan (menit, opsional)</label>
+                        <input type="number" id="svc-duration" name="duration_minutes" min="1" max="1440" placeholder="Misal: 60"
+                            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;box-sizing:border-box;">
+                    </div>
+                @endif
+
+                @if ($isHotel)
+                    {{-- Kapasitas kamar --}}
+                    <div>
+                        <label class="svc-label">Kapasitas Kamar</label>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                            <div>
+                                <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">Jumlah kamar</div>
+                                <div style="display:flex;align-items:center;gap:4px;">
+                                    <button type="button" onclick="stepField('svc-capacity', -1, 1)" class="svc-step-btn">−</button>
+                                    <input type="number" id="svc-capacity" name="capacity" value="1" min="1" max="50" style="width:52px;text-align:center;padding:8px 4px;border:1px solid var(--border);border-radius:8px;font-weight:700;font-size:14px;">
+                                    <button type="button" onclick="stepField('svc-capacity', 1, 50)" class="svc-step-btn">+</button>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">Kucing per kamar</div>
+                                <div style="display:flex;align-items:center;gap:4px;">
+                                    <button type="button" onclick="stepField('svc-cats-per-room', -1, 1)" class="svc-step-btn">−</button>
+                                    <input type="number" id="svc-cats-per-room" name="cats_per_room" value="1" min="1" max="10" style="width:52px;text-align:center;padding:8px 4px;border:1px solid var(--border);border-radius:8px;font-weight:700;font-size:14px;">
+                                    <button type="button" onclick="stepField('svc-cats-per-room', 1, 10)" class="svc-step-btn">+</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="svc-capacity-summary" style="margin-top:8px;padding:10px 12px;background:{{ $accent['soft'] }};border-radius:8px;font-size:12.5px;font-weight:700;color:{{ $accent['color'] }};"></div>
+                    </div>
+
+                    {{-- Kelas kamar --}}
+                    <div>
+                        <label class="svc-label">Kelas Kamar (opsional)</label>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;" id="room-class-chips">
+                            @foreach ($roomClasses as $rc)
+                                <button type="button" class="svc-chip" data-val="{{ $rc }}" onclick="toggleRoomClass('{{ $rc }}')">{{ $rc }}</button>
+                            @endforeach
+                            <button type="button" class="svc-chip" data-val="__manual__" onclick="toggleRoomClass('__manual__')">Lainnya</button>
+                        </div>
+                        <input type="hidden" id="svc-room-class" name="room_class" value="">
+                        <input type="text" id="svc-room-class-manual" placeholder="Nama kelas kamar (maks 60 karakter)" maxlength="60"
+                            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;display:none;box-sizing:border-box;">
+                    </div>
+
+                    {{-- Fasilitas --}}
+                    <div>
+                        <label class="svc-label">Fasilitas Kamar</label>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;" id="facility-chips">
+                            @foreach ($facilityPresets as $fac)
+                                <button type="button" class="svc-chip" data-fac="{{ $fac }}" onclick="toggleFacility('{{ $fac }}')">{{ $fac }}</button>
+                            @endforeach
+                        </div>
+                        <div id="custom-facility-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" id="custom-facility-input" maxlength="40" placeholder="Fasilitas lain, maks 40 karakter"
+                                style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomFacility();}">
+                            <button type="button" onclick="addCustomFacility()" style="padding:8px 14px;background:{{ $accent['color'] }};color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">+</button>
+                        </div>
+                        <div id="facility-hidden-inputs"></div>
+                    </div>
+
+                    {{-- Jam check-in / check-out --}}
+                    <div>
+                        <label class="svc-label">Jam Check-in & Check-out</label>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                            <div>
+                                <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">Check-in</div>
+                                <input type="time" id="svc-checkin" name="checkin_time" value="14:00"
+                                    style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-weight:700;box-sizing:border-box;">
+                            </div>
+                            <div>
+                                <div style="font-size:11.5px;color:var(--muted);margin-bottom:4px;">Check-out</div>
+                                <input type="time" id="svc-checkout" name="checkout_time" value="12:00"
+                                    style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-weight:700;box-sizing:border-box;">
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+            </div>{{-- end fields --}}
+
+            <div style="display:flex;gap:10px;margin-top:22px;">
+                <button type="button" onclick="closeServiceModal()" style="flex:1;padding:11px;background:#f1f5f9;border:none;border-radius:10px;font-size:13.5px;font-weight:600;color:var(--body);cursor:pointer;">Batal</button>
+                <button type="submit" id="svc-submit-btn" style="flex:2;padding:11px;background:{{ $accent['color'] }};color:#fff;border:none;border-radius:10px;font-size:13.5px;font-weight:700;cursor:pointer;transition:.2s;">
+                    Simpan Layanan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .svc-label { display:block; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; margin-bottom:6px; }
+    .svc-chip {
+        padding:5px 12px; font-size:12.5px; font-weight:600; border-radius:20px; border:1.5px solid var(--border);
+        background:#fff; color:var(--body); cursor:pointer; transition:.15s;
+    }
+    .svc-chip.active { background:{{ $accent['color'] }}; color:#fff; border-color:{{ $accent['color'] }}; }
+    .svc-chip:hover:not(.active) { border-color:{{ $accent['color'] }}; color:{{ $accent['color'] }}; }
+
+    .svc-step-btn {
+        width:32px; height:32px; border-radius:8px; border:1px solid var(--border); background:#f8fafc;
+        font-size:16px; font-weight:700; cursor:pointer; color:{{ $accent['color'] }}; line-height:1; flex-shrink:0;
+        display:flex; align-items:center; justify-content:center; transition:.15s;
+    }
+    .svc-step-btn:hover { background:{{ $accent['soft'] }}; border-color:{{ $accent['color'] }}; }
+
+    .custom-fac-tag {
+        display:inline-flex; align-items:center; gap:5px; padding:3px 10px; background:{{ $accent['soft'] }};
+        color:{{ $accent['color'] }}; border-radius:20px; font-size:12px; font-weight:700;
+    }
+    .custom-fac-tag button { background:none; border:none; cursor:pointer; color:{{ $accent['color'] }}; font-size:13px; line-height:1; padding:0; }
+</style>
+
 
 {{-- TAB 4: PROFIL --}}
 <div id="panel-profil" class="tab-panel {{ $currentTab === 'profil' ? 'active' : '' }}">
@@ -746,7 +1008,7 @@
     }
 
     document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') closeMitraSwitcher();
+        if (e.key === 'Escape') { closeMitraSwitcher(); closeServiceModal(); }
     });
 
     function filterBookings(status, btn) {
@@ -761,6 +1023,334 @@
             row.style.display = show ? 'flex' : 'none';
         });
     }
+
+    // ---------------------------------------------------------------
+    // Service Modal
+    // ---------------------------------------------------------------
+    var _currentServiceId = null;
+    var _storeUrl  = '{{ route("owner.mitra.service.store", $mitraId) }}';
+    var _updateBase = '{{ url("owner/mitra/" . $mitraId . "/services") }}';
+
+    function openServiceModal(data) {
+        var modal = document.getElementById('service-modal');
+        if (!modal) return;
+
+        _currentServiceId = data ? data.id : null;
+
+        // Title + button label
+        var isEdit = !!data;
+        document.getElementById('svc-modal-title').textContent = isEdit ? 'Edit Layanan' : 'Tambah Layanan';
+        document.getElementById('svc-submit-btn').textContent  = isEdit ? 'Simpan Perubahan' : 'Simpan Layanan';
+
+        // Form action + method spoofing
+        var form = document.getElementById('svc-modal-form');
+        if (isEdit) {
+            form.action = _updateBase + '/' + data.id;
+            document.getElementById('svc-form-method').value = 'PUT';
+        } else {
+            form.action = _storeUrl;
+            document.getElementById('svc-form-method').value = '';
+        }
+
+        // Reset all fields first
+        resetServiceForm();
+
+        // Populate if editing
+        if (isEdit) {
+            populateServiceForm(data);
+        }
+
+        modal.classList.add('open');
+        updateCapacitySummary();
+    }
+
+    function closeServiceModal() {
+        var modal = document.getElementById('service-modal');
+        if (modal) modal.classList.remove('open');
+    }
+
+    function resetServiceForm() {
+        // Preset select
+        var sel = document.getElementById('svc-preset-select');
+        if (sel) sel.value = '';
+        handlePresetChange('');
+
+        // Basic fields
+        var price = document.getElementById('svc-price');
+        if (price) price.value = '';
+        var dur = document.getElementById('svc-duration');
+        if (dur) dur.value = '';
+
+        // Hotel fields
+        var cap = document.getElementById('svc-capacity');
+        if (cap) cap.value = 1;
+        var cpr = document.getElementById('svc-cats-per-room');
+        if (cpr) cpr.value = 1;
+
+        var rcHidden = document.getElementById('svc-room-class');
+        if (rcHidden) rcHidden.value = '';
+        var rcManual = document.getElementById('svc-room-class-manual');
+        if (rcManual) { rcManual.value = ''; rcManual.style.display = 'none'; }
+
+        // Deselect all room-class chips
+        document.querySelectorAll('#room-class-chips .svc-chip').forEach(function(c) {
+            c.classList.remove('active');
+        });
+
+        // Deselect all facility chips
+        document.querySelectorAll('#facility-chips .svc-chip').forEach(function(c) {
+            c.classList.remove('active');
+        });
+
+        // Clear custom facility tags + hidden inputs
+        var tagContainer = document.getElementById('custom-facility-tags');
+        if (tagContainer) tagContainer.innerHTML = '';
+        var hiddenContainer = document.getElementById('facility-hidden-inputs');
+        if (hiddenContainer) hiddenContainer.innerHTML = '';
+
+        var customInput = document.getElementById('custom-facility-input');
+        if (customInput) customInput.value = '';
+
+        // Times
+        var ci = document.getElementById('svc-checkin');
+        if (ci) ci.value = '14:00';
+        var co = document.getElementById('svc-checkout');
+        if (co) co.value = '12:00';
+    }
+
+    function populateServiceForm(data) {
+        // Name / preset
+        var presets = Array.from(document.querySelectorAll('#svc-preset-select option')).map(function(o){ return o.value; });
+        var sel = document.getElementById('svc-preset-select');
+        if (presets.includes(data.name)) {
+            sel.value = data.name;
+            handlePresetChange(data.name);
+        } else {
+            sel.value = '__manual__';
+            handlePresetChange('__manual__');
+            var manualInput = document.getElementById('svc-name-manual');
+            if (manualInput) manualInput.value = data.name || '';
+        }
+
+        var price = document.getElementById('svc-price');
+        if (price) price.value = data.price || '';
+
+        var dur = document.getElementById('svc-duration');
+        if (dur) dur.value = data.duration_minutes || '';
+
+        // Hotel-specific
+        var cap = document.getElementById('svc-capacity');
+        if (cap && data.capacity) cap.value = data.capacity;
+
+        var cpr = document.getElementById('svc-cats-per-room');
+        if (cpr && data.cats_per_room) cpr.value = data.cats_per_room;
+
+        // Room class
+        if (data.room_class) {
+            toggleRoomClass(data.room_class);
+            var rcManual = document.getElementById('svc-room-class-manual');
+            var rcHidden = document.getElementById('svc-room-class');
+            var presetRcs = Array.from(document.querySelectorAll('#room-class-chips .svc-chip[data-val]'))
+                .map(function(c){ return c.dataset.val; })
+                .filter(function(v){ return v !== '__manual__'; });
+            if (!presetRcs.includes(data.room_class)) {
+                // It's a custom class, use manual chip
+                document.querySelectorAll('#room-class-chips .svc-chip').forEach(function(c){ c.classList.remove('active'); });
+                var manualChip = document.querySelector('#room-class-chips .svc-chip[data-val="__manual__"]');
+                if (manualChip) manualChip.classList.add('active');
+                if (rcManual) { rcManual.style.display = 'block'; rcManual.value = data.room_class; }
+                if (rcHidden) rcHidden.value = '';
+            }
+        }
+
+        // Facilities
+        var facilities = data.facilities || [];
+        var presetFacChips = document.querySelectorAll('#facility-chips .svc-chip[data-fac]');
+        var presetFacNames = Array.from(presetFacChips).map(function(c){ return c.dataset.fac; });
+
+        facilities.forEach(function(fac) {
+            if (presetFacNames.includes(fac)) {
+                var chip = document.querySelector('#facility-chips .svc-chip[data-fac="' + CSS.escape(fac) + '"]');
+                if (chip) { chip.classList.add('active'); addFacilityHidden(fac); }
+            } else {
+                addCustomFacilityTag(fac);
+            }
+        });
+
+        // Times
+        var ci = document.getElementById('svc-checkin');
+        if (ci && data.checkin_time) ci.value = data.checkin_time;
+        var co = document.getElementById('svc-checkout');
+        if (co && data.checkout_time) co.value = data.checkout_time;
+    }
+
+    function handlePresetChange(val) {
+        var manualInput = document.getElementById('svc-name-manual');
+        if (!manualInput) return;
+        var nameInput = document.querySelector('#svc-modal-form input[name="name"]');
+        if (val === '__manual__') {
+            manualInput.style.display = 'block';
+            manualInput.required = true;
+        } else {
+            manualInput.style.display = 'none';
+            manualInput.required = false;
+            if (val && nameInput) {
+                manualInput.value = val;
+            }
+        }
+        // Ensure name hidden value mirrors preset when not manual
+        if (val && val !== '__manual__' && nameInput) {
+            manualInput.value = val;
+        }
+    }
+
+    // On form submit, if preset is not __manual__, copy preset value to name field
+    document.getElementById('svc-modal-form') && document.getElementById('svc-modal-form').addEventListener('submit', function() {
+        var sel = document.getElementById('svc-preset-select');
+        var nameInput = document.getElementById('svc-name-manual');
+        if (sel && nameInput && sel.value && sel.value !== '__manual__') {
+            nameInput.value = sel.value;
+            nameInput.style.display = 'block'; // ensure it is submitted
+        }
+
+        // Room class: if manual input visible, copy its value to hidden
+        var rcManual = document.getElementById('svc-room-class-manual');
+        var rcHidden = document.getElementById('svc-room-class');
+        if (rcManual && rcHidden && rcManual.style.display !== 'none') {
+            rcHidden.value = rcManual.value;
+        }
+    });
+
+    // ---- Room class chips ----
+    function toggleRoomClass(val) {
+        var chips = document.querySelectorAll('#room-class-chips .svc-chip');
+        var rcHidden = document.getElementById('svc-room-class');
+        var rcManual = document.getElementById('svc-room-class-manual');
+        var currentActive = document.querySelector('#room-class-chips .svc-chip.active');
+
+        // Deselect all first
+        chips.forEach(function(c){ c.classList.remove('active'); });
+
+        // If clicking the already active chip, deselect
+        if (currentActive && currentActive.dataset.val === val) {
+            if (rcHidden) rcHidden.value = '';
+            if (rcManual) { rcManual.style.display = 'none'; rcManual.value = ''; }
+            return;
+        }
+
+        // Select clicked
+        var clicked = document.querySelector('#room-class-chips .svc-chip[data-val="' + CSS.escape(val) + '"]');
+        if (clicked) clicked.classList.add('active');
+
+        if (val === '__manual__') {
+            if (rcHidden) rcHidden.value = '';
+            if (rcManual) rcManual.style.display = 'block';
+        } else {
+            if (rcHidden) rcHidden.value = val;
+            if (rcManual) { rcManual.style.display = 'none'; rcManual.value = ''; }
+        }
+    }
+
+    // ---- Facility chips ----
+    function toggleFacility(fac) {
+        var chip = document.querySelector('#facility-chips .svc-chip[data-fac="' + CSS.escape(fac) + '"]');
+        if (!chip) return;
+        var active = chip.classList.contains('active');
+        if (active) {
+            chip.classList.remove('active');
+            removeFacilityHidden(fac);
+        } else {
+            chip.classList.add('active');
+            addFacilityHidden(fac);
+        }
+    }
+
+    function addFacilityHidden(fac) {
+        var container = document.getElementById('facility-hidden-inputs');
+        if (!container) return;
+        // Avoid duplicates
+        var existing = container.querySelector('input[data-fac="' + CSS.escape(fac) + '"]');
+        if (existing) return;
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'facilities[]';
+        input.value = fac;
+        input.setAttribute('data-fac', fac);
+        container.appendChild(input);
+    }
+
+    function removeFacilityHidden(fac) {
+        var container = document.getElementById('facility-hidden-inputs');
+        if (!container) return;
+        var existing = container.querySelector('input[data-fac="' + CSS.escape(fac) + '"]');
+        if (existing) existing.remove();
+    }
+
+    function addCustomFacility() {
+        var input = document.getElementById('custom-facility-input');
+        if (!input) return;
+        var val = input.value.trim();
+        if (!val) return;
+        if (val.length > 40) { alert('Nama fasilitas maksimal 40 karakter'); return; }
+
+        // Check duplicates (preset + custom)
+        var allHidden = document.querySelectorAll('#facility-hidden-inputs input[name="facilities[]"]');
+        for (var i = 0; i < allHidden.length; i++) {
+            if (allHidden[i].value.toLowerCase() === val.toLowerCase()) {
+                input.value = '';
+                return;
+            }
+        }
+
+        addCustomFacilityTag(val);
+        input.value = '';
+    }
+
+    function addCustomFacilityTag(fac) {
+        var tagContainer = document.getElementById('custom-facility-tags');
+        if (!tagContainer) return;
+
+        var tag = document.createElement('span');
+        tag.className = 'custom-fac-tag';
+        tag.setAttribute('data-fac', fac);
+        tag.innerHTML = fac + ' <button type="button" onclick="removeCustomFacility(this, \'' + fac.replace(/'/g, "\\'") + '\')">✕</button>';
+        tagContainer.appendChild(tag);
+
+        addFacilityHidden(fac);
+    }
+
+    function removeCustomFacility(btn, fac) {
+        var tag = btn.closest('.custom-fac-tag');
+        if (tag) tag.remove();
+        removeFacilityHidden(fac);
+    }
+
+    // ---- Capacity stepper ----
+    function stepField(id, delta, min) {
+        var input = document.getElementById(id);
+        if (!input) return;
+        var max = parseInt(input.max) || 999;
+        var newVal = Math.max(min, Math.min(max, parseInt(input.value || 1) + delta));
+        input.value = newVal;
+        updateCapacitySummary();
+    }
+
+    function updateCapacitySummary() {
+        var capInput = document.getElementById('svc-capacity');
+        var cprInput = document.getElementById('svc-cats-per-room');
+        var summary  = document.getElementById('svc-capacity-summary');
+        if (!capInput || !cprInput || !summary) return;
+        var rooms = parseInt(capInput.value) || 1;
+        var perRoom = parseInt(cprInput.value) || 1;
+        var total = rooms * perRoom;
+        summary.textContent = rooms + ' kamar × ' + perRoom + ' kucing = ' + total + ' kucing per malam';
+    }
+
+    // Live summary update when inputs are manually typed
+    ['svc-capacity', 'svc-cats-per-room'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('input', updateCapacitySummary);
+    });
 </script>
 @endif
 @endsection
