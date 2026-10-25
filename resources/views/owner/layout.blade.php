@@ -68,17 +68,6 @@
                 </svg>
                 <span>Kucing Saya</span>
             </a>
-            <a href="{{ route('owner.bookings.index') }}"
-                class="{{ request()->routeIs('owner.bookings*') ? 'active' : '' }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <rect x="8" y="2" width="8" height="4" rx="1" />
-                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-                    <path d="M9 12h6" />
-                    <path d="M9 16h6" />
-                </svg>
-                <span>Riwayat Booking</span>
-            </a>
             <a href="{{ route('owner.vaccine.calculator') }}"
                 class="{{ request()->routeIs('owner.vaccine.calculator*') ? 'active' : '' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -91,6 +80,15 @@
                     <path d="m14 4 6 6" />
                 </svg>
                 <span>Kalkulator Vaksin</span>
+            </a>
+
+            <a href="{{ route('petshops.index') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                </svg>
+                <span>Cari Petshop</span>
             </a>
 
             <div class="menu-label">Bisnis &amp; Kemitraan</div>

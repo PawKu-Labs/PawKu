@@ -8,6 +8,7 @@ use App\Http\Controllers\OwnerBookingController;
 use App\Http\Controllers\OwnerCatController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\OwnerMitraController;
+use App\Http\Controllers\PetshopController;
 use App\Http\Controllers\SuperAdminController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,12 @@ if (! defined('UUID_PATTERN')) {
 
 // Halaman Publik
 Route::get('/', fn () => view('index'))->name('home');
+
+// Cari Petshop (publik). Hanya Mitra berstatus approved; jam operasional & ulasan khusus user login (dijaga di controller).
+Route::get('/petshops', [PetshopController::class, 'index'])->name('petshops.index');
+Route::get('/petshops/{mitra}', [PetshopController::class, 'show'])
+    ->where('mitra', UUID_PATTERN)
+    ->name('petshops.show');
 
 // Rute Tamu (Hanya dapat diakses jika BELUM login)
 Route::middleware('guest')->group(function () {

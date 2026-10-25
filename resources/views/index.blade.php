@@ -59,6 +59,10 @@
                     Pet Care
                 </a>
 
+                <a href="{{ route('petshops.index') }}">
+                    Petshop
+                </a>
+
                 <a href="#about">
                     About
                 </a>
