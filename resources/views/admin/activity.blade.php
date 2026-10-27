@@ -181,7 +181,7 @@
             </div>
 
             @if($logs->hasPages())
-                <div class="pager">{{ $logs->links('pagination::simple-default') }}</div>
+                <div class="pager">{{ $logs->links('vendor.pagination.simple-default') }}</div>
             @endif
         </div>
     @endunless
