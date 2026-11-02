@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminBackupController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MitraDashboardController;
+use App\Http\Controllers\MitraProfileController;
 use App\Http\Controllers\OwnerBookingController;
 use App\Http\Controllers\OwnerCatController;
 use App\Http\Controllers\OwnerDashboardController;
@@ -109,6 +110,17 @@ Route::middleware('auth')->group(function () {
         Route::patch('/mitra/{mitra}/services/{service}/toggle', [MitraDashboardController::class, 'toggleService'])
             ->where(['mitra' => UUID_PATTERN, 'service' => UUID_PATTERN])
             ->name('mitra.service.toggle');
+
+        // Profil mitra: ganti/hapus foto profil (logo_url) dan ubah nama + deskripsi
+        Route::put('/mitra/{mitra}/profile', [MitraProfileController::class, 'updateInfo'])
+            ->where('mitra', UUID_PATTERN)->middleware('throttle:20,1')
+            ->name('mitra.profile.update');
+        Route::post('/mitra/{mitra}/profile/logo', [MitraProfileController::class, 'updateLogo'])
+            ->where('mitra', UUID_PATTERN)->middleware('throttle:10,1')
+            ->name('mitra.profile.logo.update');
+        Route::delete('/mitra/{mitra}/profile/logo', [MitraProfileController::class, 'removeLogo'])
+            ->where('mitra', UUID_PATTERN)->middleware('throttle:10,1')
+            ->name('mitra.profile.logo.destroy');
 
         Route::get('/mitra/create', [OwnerMitraController::class, 'create'])->name('mitra.create');
         Route::post('/mitra', [OwnerMitraController::class, 'store'])->name('mitra.store');

@@ -851,26 +851,111 @@
 
 {{-- TAB 4: PROFIL --}}
 <div id="panel-profil" class="tab-panel {{ $currentTab === 'profil' ? 'active' : '' }}">
+    <style>
+        .pf-head { display: flex; align-items: flex-start; gap: 16px; }
+        .pf-head-body { min-width: 0; flex: 1; }
+        .pf-avatar {
+            width: 84px; height: 84px; border-radius: 22px; background: var(--bg); border: 1px solid var(--border);
+            overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 34px; flex-shrink: 0;
+        }
+        .pf-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .pf-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        .pf-btn {
+            font-family: inherit; font-size: 12.5px; font-weight: 600; padding: 8px 14px; border-radius: var(--r);
+            border: 1px solid var(--border); background: #fff; color: var(--heading); cursor: pointer; transition: .2s;
+        }
+        .pf-btn:hover { background: var(--bg); }
+        .pf-btn:focus-visible, .pf-input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+        .pf-btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+        .pf-btn-primary:hover { background: var(--primary); filter: brightness(.93); }
+        .pf-btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+        .pf-btn-danger { color: var(--danger, #ef4444); border-color: #fee2e2; }
+        .pf-btn-danger:hover { background: #fef2f2; }
+        .pf-note { font-size: 11.5px; color: var(--muted); margin-top: 8px; line-height: 1.4; }
+        .pf-note.err { color: var(--danger, #ef4444); }
+        .pf-label { display: block; font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+        .pf-input {
+            width: 100%; font-family: inherit; font-size: 14px; color: var(--heading); background: #fff;
+            padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r);
+        }
+        .pf-input:focus { border-color: var(--primary); outline: none; }
+        #pf-info-form:not([hidden]) { display: flex; }
+        @media (max-width: 480px) { .pf-head { flex-direction: column; } }
+    </style>
+
+    @if ($errors->any())
+        <div class="alert alert-err" style="margin-bottom: 14px;">
+            @foreach ($errors->all() as $pfErr)
+                <div>⚠️ {{ $pfErr }}</div>
+            @endforeach
+        </div>
+    @endif
+
+    <form id="pf-logo-form" action="{{ route('owner.mitra.profile.logo.update', $activeMitra->id) }}" method="POST" enctype="multipart/form-data" hidden>
+        @csrf
+        <input type="file" id="pf-file" name="logo" accept="image/jpeg,image/png,image/webp">
+    </form>
+    <form id="pf-remove-form" action="{{ route('owner.mitra.profile.logo.destroy', $activeMitra->id) }}" method="POST" hidden>
+        @csrf
+        @method('DELETE')
+    </form>
+
     <section>
         <div class="grid g2">
             <div class="card" style="display: flex; flex-direction: column; gap: 16px;">
-                <div style="display: flex; align-items: center; gap: 14px;">
-                    <div style="width: 56px; height: 56px; border-radius: 16px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
-                        @if (!empty($activeMitra->logo_url))
-                            <img src="{{ $activeMitra->logo_url }}" alt="{{ $activeMitra->name }}" style="width: 100%; height: 100%; object-fit: cover;">
-                        @elseif (!empty($activeMitra->photo_url))
-                            <img src="{{ $activeMitra->photo_url }}" alt="{{ $activeMitra->name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                @php
+                    $pfHasLogo = !empty($activeMitra->logo_url);
+                    $pfPhoto = $activeMitra->logo_url ?: ($activeMitra->photo_url ?? null);
+                @endphp
+                <div class="pf-head">
+                    <div class="pf-avatar" id="pf-avatar">
+                        @if ($pfPhoto)
+                            <img src="{{ $pfPhoto }}" alt="{{ $activeMitra->name }}">
                         @else
                             {{ $currentType['icon'] }}
                         @endif
                     </div>
-                    <div>
+                    <div class="pf-head-body">
                         <h3 style="font-size: 18px; font-weight: 700; color: var(--heading);">{{ $activeMitra->name }}</h3>
                         <span class="mitra-type-badge {{ $currentType['class'] }}" style="margin-top: 4px;">
                             {{ $currentType['icon'] }} {{ $currentType['label'] }}
                         </span>
+                        <div class="pf-actions">
+                            <button type="button" class="pf-btn" id="pf-pick">📷 {{ $pfHasLogo ? 'Ganti foto' : 'Tambah foto' }}</button>
+                            <button type="submit" form="pf-logo-form" class="pf-btn pf-btn-primary" id="pf-save" hidden>Simpan foto</button>
+                            <button type="button" class="pf-btn" id="pf-cancel" hidden>Batal</button>
+                            @if ($pfHasLogo)
+                                <button type="submit" form="pf-remove-form" class="pf-btn pf-btn-danger" id="pf-remove"
+                                    onclick="return confirm('Hapus foto profil? Aplikasi akan memakai foto galeri pertama bila ada.')">Hapus</button>
+                            @endif
+                        </div>
+                        <p class="pf-note" id="pf-note">JPG, PNG, atau WebP. Maksimal 3 MB.</p>
                     </div>
                 </div>
+
+                <div>
+                    <button type="button" class="pf-btn" id="pf-info-toggle">✏️ Ubah nama &amp; deskripsi</button>
+                </div>
+
+                <form id="pf-info-form" action="{{ route('owner.mitra.profile.update', $activeMitra->id) }}" method="POST" hidden
+                    style="flex-direction: column; gap: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r); padding: 14px;">
+                    @csrf
+                    @method('PUT')
+                    <div>
+                        <label class="pf-label" for="pf-name">Nama usaha</label>
+                        <input class="pf-input" id="pf-name" name="name" type="text" maxlength="120" required
+                            value="{{ old('name', $activeMitra->name) }}">
+                    </div>
+                    <div>
+                        <label class="pf-label" for="pf-desc">Deskripsi singkat</label>
+                        <textarea class="pf-input" id="pf-desc" name="description" rows="4" maxlength="1000"
+                            style="resize: vertical; line-height: 1.5;">{{ old('description', $activeMitra->description) }}</textarea>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="submit" class="pf-btn pf-btn-primary">Simpan perubahan</button>
+                        <button type="button" class="pf-btn" id="pf-info-cancel">Batal</button>
+                    </div>
+                </form>
 
                 <div style="border-top: 1px solid #f1f5f9; padding-top: 14px; display: flex; flex-direction: column; gap: 10px; font-size: 13.5px;">
                     <div>
@@ -935,6 +1020,69 @@
         </div>
     </section>
 </div>
+
+<script>
+    (function () {
+        var MAX = 3 * 1024 * 1024;
+        var TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+        var file = document.getElementById('pf-file');
+        if (!file) return;
+        var pick = document.getElementById('pf-pick');
+        var save = document.getElementById('pf-save');
+        var cancel = document.getElementById('pf-cancel');
+        var remove = document.getElementById('pf-remove');
+        var note = document.getElementById('pf-note');
+        var avatar = document.getElementById('pf-avatar');
+        var logoForm = document.getElementById('pf-logo-form');
+        var originalAvatar = avatar.innerHTML;
+        var defaultNote = note.textContent;
+        var url = null;
+
+        function reset(msg) {
+            file.value = '';
+            if (url) { URL.revokeObjectURL(url); url = null; }
+            avatar.innerHTML = originalAvatar;
+            save.hidden = true; cancel.hidden = true; pick.hidden = false;
+            if (remove) remove.hidden = false;
+            note.textContent = msg || defaultNote;
+            note.classList.toggle('err', !!msg);
+        }
+
+        pick.addEventListener('click', function () { file.click(); });
+        cancel.addEventListener('click', function () { reset(); });
+
+        file.addEventListener('change', function () {
+            var f = file.files[0];
+            if (!f) { reset(); return; }
+            if (TYPES.indexOf(f.type) === -1) { reset('Format tidak didukung. Pilih foto JPG, PNG, atau WebP.'); return; }
+            if (f.size > MAX) { reset('Foto terlalu besar. Ukuran maksimal 3 MB.'); return; }
+            if (url) URL.revokeObjectURL(url);
+            url = URL.createObjectURL(f);
+            avatar.innerHTML = '';
+            var img = document.createElement('img');
+            img.src = url; img.alt = 'Pratinjau foto baru';
+            avatar.appendChild(img);
+            save.hidden = false; cancel.hidden = false; pick.hidden = true;
+            if (remove) remove.hidden = true;
+            note.classList.remove('err');
+            note.textContent = f.name + ' (' + (f.size / 1024 / 1024).toFixed(2) + ' MB). Klik "Simpan foto" untuk menerapkan.';
+        });
+
+        logoForm.addEventListener('submit', function () {
+            save.disabled = true; save.textContent = 'Mengunggah...';
+        });
+
+        var infoForm = document.getElementById('pf-info-form');
+        var infoToggle = document.getElementById('pf-info-toggle');
+        var infoCancel = document.getElementById('pf-info-cancel');
+        function setInfo(open) { infoForm.hidden = !open; infoToggle.hidden = open; }
+        infoToggle.addEventListener('click', function () { setInfo(true); });
+        infoCancel.addEventListener('click', function () { infoForm.reset(); setInfo(false); });
+        @if ($errors->has('name') || $errors->has('description'))
+            setInfo(true);
+        @endif
+    })();
+</script>
 
 {{-- MODAL GANTI MITRA --}}
 @if ($userMitras->count() > 1)
