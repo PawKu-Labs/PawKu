@@ -9,7 +9,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -32,18 +31,4 @@ return Application::configure(basePath: dirname(__DIR__))
             fn(Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
 
-        // SEMENTARA: tampilkan error asli di browser. HAPUS setelah selesai debugging.
-        $exceptions->render(function (\Throwable $e, Request $request) {
-            // Biarkan validasi form tetap berjalan normal
-            if ($e instanceof ValidationException) {
-                return null;
-            }
-
-            return response(
-                get_class($e) . "\n"
-                . $e->getMessage() . "\n"
-                . $e->getFile() . ':' . $e->getLine(),
-                500
-            )->header('Content-Type', 'text/plain');
-        });
     })->create();

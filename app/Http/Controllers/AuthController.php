@@ -55,7 +55,7 @@ class AuthController extends Controller
                 'email_not_confirmed' => 'Email belum dikonfirmasi. Periksa kotak masuk email Anda.',
                 'over_request_rate_limit',
                 'over_email_send_rate_limit' => 'Terlalu banyak percobaan. Coba lagi beberapa saat.',
-                default => 'DEBUG status=' . $res->status() . ' body=' . substr($res->body(), 0, 300),
+                default => 'Gagal masuk. Periksa kembali email dan password Anda.',
             };
 
             return response()->json([
