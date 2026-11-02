@@ -156,6 +156,8 @@ Route::middleware('auth')->group(function () {
     Route::prefix('superadmin')->name('superadmin.')->middleware('role:super_admin')->group(function () {
         Route::get('/dashboard', [SuperAdminController::class, 'dashboard'])->name('dashboard');
 
+        Route::view('/pendapatan', 'superadmin.pendapatan')->name('pendapatan');
+
         Route::get('/petshops', [SuperAdminController::class, 'petshops'])->name('petshops');
         Route::post('/petshops/{id}/status', [SuperAdminController::class, 'updatePetshopStatus'])->name('petshops.status');
 

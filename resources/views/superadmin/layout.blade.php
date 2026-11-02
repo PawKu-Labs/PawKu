@@ -1367,6 +1367,16 @@
                     <span class="badge">{{ $pendingCount }}</span>
                 @endif
             </a>
+
+            <a href="{{ route('superadmin.pendapatan') }}"
+                class="{{ request()->routeIs('superadmin.pendapatan') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+                <span>Pendapatan</span>
+            </a>
+
+
             <a href="{{ route('superadmin.admins') }}"
                 class="{{ request()->routeIs('superadmin.admins*') ? 'active' : '' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
