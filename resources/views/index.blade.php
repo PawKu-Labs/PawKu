@@ -74,12 +74,8 @@
 
             <div class="nav-actions">
 
-                <a href="/login" class="login-link">
+                <a href="/login" class="btn-primary">
                     Login
-                </a>
-
-                <a href="#" class="btn-primary">
-                    Get Started
                 </a>
 
             </div>
