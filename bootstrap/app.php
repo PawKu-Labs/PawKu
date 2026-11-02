@@ -30,4 +30,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn(Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+        $exceptions->render(function (\Throwable $e, $request) {
+            if ($request->is('login') || $request->is('login/*')) {
+                return response(
+                    get_class($e) . "\n" . $e->getMessage() . "\n" . $e->getFile() . ':' . $e->getLine(),
+                    500
+                )->header('Content-Type', 'text/plain');
+            }
+        });
     })->create();
