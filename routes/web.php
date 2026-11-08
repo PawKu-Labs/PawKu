@@ -36,12 +36,15 @@ Route::get('/petshops/{mitra}', [PetshopController::class, 'show'])
 Route::middleware('guest')->group(function () {
     Route::get('/login', fn () => view('login'))->name('login');
     Route::get('/register', fn () => view('register'))->name('register');
-    Route::get('/auth/callback', fn () => view('auth.callback'))->name('auth.callback');
 
     Route::post('/login', [AuthController::class, 'login'])
         ->middleware('throttle:10,1')
         ->name('login.submit');
 });
+
+// OAuth Callback — tanpa middleware guest agar dapat diakses kapan saja
+// (token dikirim lewat URL fragment #access_token, bukan via session)
+Route::get('/auth/callback', fn () => view('auth.callback'))->name('auth.callback');
 
 // OAuth Callback Session Handler
 Route::post('/auth/session', [AuthController::class, 'session'])

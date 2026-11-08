@@ -17,7 +17,7 @@
         rel="stylesheet">
 
     <!-- PawKu CSS -->
-    <link rel="stylesheet" href="{{ asset('./css/index.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/index.css') }}">
 
 </head>
 

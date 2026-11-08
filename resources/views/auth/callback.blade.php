@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Memproses login...</title>
+    <link rel="icon" type="image/png" href="{{ asset('assets/icon/pawku-nobg.png') }}">
 </head>
 
 <body>
