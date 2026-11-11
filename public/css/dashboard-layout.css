@@ -702,6 +702,11 @@ a.card.stat:hover,
     box-shadow: 0 8px 18px -8px rgba(234, 138, 31, .8);
 }
 
+.tab .n {
+    font-weight: 400;
+    opacity: .8;
+}
+
 /* =====================================================================
    PILLS & STATUS BADGES
    ===================================================================== */
@@ -767,6 +772,538 @@ a.card.stat:hover,
 }
 
 /* =====================================================================
+   HELPER TEXT & SUB
+   ===================================================================== */
+.sub {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+/* =====================================================================
+   FORM FIELDS, INPUTS & FILTERS
+   ===================================================================== */
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--heading);
+}
+
+.field.grow {
+    flex: 1;
+    min-width: 180px;
+}
+
+.input {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    color: var(--heading);
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    transition: border-color .2s, box-shadow .2s;
+    min-height: 40px;
+}
+
+.input::placeholder {
+    color: var(--muted);
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: var(--ring);
+}
+
+select.input {
+    appearance: auto;
+    cursor: pointer;
+}
+
+.filters {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* =====================================================================
+   TABLES & TABLE WRAPPERS
+   ===================================================================== */
+.table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+table.responsive {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+}
+
+table.responsive thead {
+    background: #faf6f1;
+}
+
+table.responsive th {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    padding: 12px 16px;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+}
+
+table.responsive td {
+    padding: 14px 16px;
+    color: var(--body);
+    border-bottom: 1px solid #f1ede8;
+    vertical-align: middle;
+}
+
+table.responsive tbody tr:last-child td {
+    border-bottom: none;
+}
+
+table.responsive tbody tr:hover {
+    background: #fefcf9;
+}
+
+table.responsive .cell-first {
+    padding-left: 22px;
+}
+
+table.responsive .cell-last {
+    padding-right: 22px;
+}
+
+/* =====================================================================
+   EMPTY STATES
+   ===================================================================== */
+.empty {
+    text-align: center;
+    padding: 40px 20px;
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+table.responsive td.empty {
+    border-bottom: none;
+}
+
+table.responsive td.empty:hover {
+    background: transparent;
+}
+
+/* =====================================================================
+   ALERT BAR (Pending actions / warnings)
+   ===================================================================== */
+.alert-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 20px;
+    border-radius: var(--rl);
+    background: #fffbe6;
+    border: 1px solid #ffe58f;
+    flex-wrap: wrap;
+}
+
+.alert-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #faad14;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+/* =====================================================================
+   ACTION BUTTONS GROUP
+   ===================================================================== */
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.stack {
+    min-width: 180px;
+}
+
+/* =====================================================================
+   BUTTON VARIANTS (green, primary context)
+   ===================================================================== */
+.btn-green {
+    background: var(--green);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(46, 158, 107, .25);
+}
+
+.btn-green:hover {
+    background: var(--green-hover);
+    box-shadow: 0 6px 16px rgba(46, 158, 107, .35);
+}
+
+/* =====================================================================
+   CATEGORY PILL COLORS
+   ===================================================================== */
+.c-user {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.c-data {
+    background: #fefce8;
+    color: #a16207;
+}
+
+.c-transaction {
+    background: #ecfdf5;
+    color: #065f46;
+}
+
+.c-admin {
+    background: #fdf2f8;
+    color: #9d174d;
+}
+
+.c-auth {
+    background: #f5f3ff;
+    color: #6d28d9;
+}
+
+/* =====================================================================
+   ACTIVITY FEED (dashboard recent activity)
+   ===================================================================== */
+.feed {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.feed li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid #f1ede8;
+}
+
+.feed li:last-child {
+    border-bottom: none;
+}
+
+.feed .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+    margin-top: 5px;
+}
+
+.feed .dot.user {
+    background: #3b82f6;
+}
+
+.feed .dot.data {
+    background: #f59e0b;
+}
+
+.feed .dot.transaction {
+    background: var(--green);
+}
+
+.feed .dot.admin {
+    background: #ec4899;
+}
+
+.feed .dot.auth {
+    background: #8b5cf6;
+}
+
+.feed-text {
+    font-size: 13.5px;
+    color: var(--heading);
+    font-weight: 500;
+    line-height: 1.45;
+}
+
+/* =====================================================================
+   PAGINATION
+   ===================================================================== */
+.pager {
+    padding: 14px 22px;
+    border-top: 1px solid #f1ede8;
+    display: flex;
+    justify-content: center;
+}
+
+.pager nav {
+    display: flex;
+    gap: 6px;
+}
+
+.pager a,
+.pager span {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--body);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    transition: .2s;
+}
+
+.pager a:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary-hover);
+}
+
+/* =====================================================================
+   DIALOG / MODAL
+   ===================================================================== */
+dialog {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: min(540px, 94vw);
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--rl);
+    padding: 24px 28px;
+    box-shadow: var(--shadow-lg);
+    color: var(--body);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+dialog:not([open]) {
+    display: none;
+}
+
+dialog::backdrop {
+    background: rgba(43, 33, 24, .45);
+    backdrop-filter: blur(4px);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.modal-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--heading);
+}
+
+.modal-close {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--muted);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: .2s;
+}
+
+.modal-close:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: var(--danger);
+}
+
+/* =====================================================================
+   DETAIL ROWS (modal detail view)
+   ===================================================================== */
+.detail-row {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f1ede8;
+    font-size: 13.5px;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-row .lbl {
+    flex-shrink: 0;
+    width: 140px;
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 12.5px;
+}
+
+.detail-row .val {
+    flex: 1;
+    color: var(--heading);
+    font-weight: 500;
+    min-width: 0;
+}
+
+/* =====================================================================
+   DIFF TABLE (activity log changes modal)
+   ===================================================================== */
+table.diff {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+table.diff th {
+    background: #faf6f1;
+    padding: 10px 14px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+table.diff td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1ede8;
+    color: var(--body);
+    vertical-align: top;
+    word-break: break-word;
+}
+
+table.diff td.old {
+    background: #fff2f0;
+    color: #cf1322;
+}
+
+table.diff td.new {
+    background: #ecfdf5;
+    color: #065f46;
+}
+
+/* =====================================================================
+   SECTION SPACING (consistent vertical rhythm between sections)
+   ===================================================================== */
+.content > section {
+    display: flex;
+    flex-direction: column;
+}
+
+/* =====================================================================
+   RESPONSIVE TABLE (mobile stacked layout)
+   ===================================================================== */
+@media (max-width: 860px) {
+    table.responsive thead {
+        display: none;
+    }
+
+    table.responsive,
+    table.responsive tbody,
+    table.responsive tr,
+    table.responsive td {
+        display: block;
+    }
+
+    table.responsive tr {
+        padding: 16px;
+        border-bottom: 1px solid #f1ede8;
+    }
+
+    table.responsive tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    table.responsive td {
+        padding: 4px 0;
+        border-bottom: none;
+        text-align: left;
+    }
+
+    table.responsive td.cell-first,
+    table.responsive td.cell-last {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    table.responsive td.cell-first {
+        padding-bottom: 8px;
+    }
+
+    table.responsive td.cell-last {
+        padding-top: 10px;
+    }
+
+    table.responsive td[data-label]:not([data-label=""])::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: .3px;
+        margin-bottom: 4px;
+    }
+
+    table.responsive .cell-last .actions {
+        justify-content: flex-start;
+    }
+
+    .detail-row {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .detail-row .lbl {
+        width: auto;
+    }
+}
+
+@media (max-width: 640px) {
+    dialog {
+        padding: 20px;
+    }
+
+    .modal-header {
+        margin-bottom: 16px;
+    }
+}
+
+/* =====================================================================
    RESPONSIVE DRAWER & MEDIA QUERIES
    ===================================================================== */
 @media (max-width: 1024px) {
@@ -826,6 +1363,25 @@ a.card.stat:hover,
     }
 
     .hero .btn {
+        width: 100%;
+    }
+
+    .filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .field.grow {
+        min-width: 0;
+    }
+
+    .alert-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .alert-bar .btn {
         width: 100%;
     }
 }

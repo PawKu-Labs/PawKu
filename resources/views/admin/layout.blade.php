@@ -277,6 +277,22 @@
                     position: 'top-end',
                 });
             @endif
+
+            // Menutup dialog saat backdrop (luar modal) diklik
+            document.addEventListener('click', function (e) {
+                if (e.target.tagName === 'DIALOG' && e.target.open) {
+                    const rect = e.target.getBoundingClientRect();
+                    const clickedInside = (
+                        rect.top <= e.clientY &&
+                        e.clientY <= rect.top + rect.height &&
+                        rect.left <= e.clientX &&
+                        e.clientX <= rect.left + rect.width
+                    );
+                    if (!clickedInside) {
+                        e.target.close();
+                    }
+                }
+            });
         });
     </script>
     @stack('scripts')
