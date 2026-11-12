@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminBackupController;
+use App\Http\Controllers\AdminArticleController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MitraDashboardController;
@@ -19,12 +20,12 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-if (! defined('UUID_PATTERN')) {
+if (!defined('UUID_PATTERN')) {
     define('UUID_PATTERN', '[0-9a-fA-F-]{36}');
 }
 
 // Halaman Publik
-Route::get('/', fn () => view('index'))->name('home');
+Route::get('/', fn() => view('index'))->name('home');
 
 // Cari Petshop (publik). Hanya Mitra berstatus approved; jam operasional & ulasan khusus user login (dijaga di controller).
 Route::get('/petshops', [PetshopController::class, 'index'])->name('petshops.index');
@@ -34,8 +35,8 @@ Route::get('/petshops/{mitra}', [PetshopController::class, 'show'])
 
 // Rute Tamu (Hanya dapat diakses jika BELUM login)
 Route::middleware('guest')->group(function () {
-    Route::get('/login', fn () => view('login'))->name('login');
-    Route::get('/register', fn () => view('register'))->name('register');
+    Route::get('/login', fn() => view('login'))->name('login');
+    Route::get('/register', fn() => view('register'))->name('register');
 
     Route::post('/login', [AuthController::class, 'login'])
         ->middleware('throttle:10,1')
@@ -44,7 +45,7 @@ Route::middleware('guest')->group(function () {
 
 // OAuth Callback — tanpa middleware guest agar dapat diakses kapan saja
 // (token dikirim lewat URL fragment #access_token, bukan via session)
-Route::get('/auth/callback', fn () => view('auth.callback'))->name('auth.callback');
+Route::get('/auth/callback', fn() => view('auth.callback'))->name('auth.callback');
 
 // OAuth Callback Session Handler
 Route::post('/auth/session', [AuthController::class, 'session'])
@@ -135,14 +136,14 @@ Route::middleware('auth')->group(function () {
     });
 
     // ALIAS & PENGALIHAN RUTE MITRA
-    Route::get('/mitra', fn () => redirect()->route('owner.mitra.dashboard'));
-    Route::get('/mitra/dashboard', fn () => redirect()->route('owner.mitra.dashboard'))->name('mitra.legacy');
+    Route::get('/mitra', fn() => redirect()->route('owner.mitra.dashboard'));
+    Route::get('/mitra/dashboard', fn() => redirect()->route('owner.mitra.dashboard'))->name('mitra.legacy');
 
     Route::prefix('mitra/{mitra}')->as('mitra.')->where(['mitra' => UUID_PATTERN])->group(function () {
-        Route::get('/dashboard', fn (string $mitra) => redirect()->route('owner.mitra.dashboard.unit', ['mitra' => $mitra]))->name('dashboard');
-        Route::get('/bookings', fn (string $mitra) => redirect()->route('owner.mitra.dashboard.unit', ['mitra' => $mitra, 'tab' => 'booking']))->name('bookings');
-        Route::get('/services', fn (string $mitra) => redirect()->route('owner.mitra.dashboard.unit', ['mitra' => $mitra, 'tab' => 'layanan']))->name('services');
-        Route::get('/profile', fn (string $mitra) => redirect()->route('owner.mitra.dashboard.unit', ['mitra' => $mitra, 'tab' => 'profil']))->name('profile');
+        Route::get('/dashboard', fn(string $mitra) => redirect()->route('owner.mitra.dashboard.unit', ['mitra' => $mitra]))->name('dashboard');
+        Route::get('/bookings', fn(string $mitra) => redirect()->route('owner.mitra.dashboard.unit', ['mitra' => $mitra, 'tab' => 'booking']))->name('bookings');
+        Route::get('/services', fn(string $mitra) => redirect()->route('owner.mitra.dashboard.unit', ['mitra' => $mitra, 'tab' => 'layanan']))->name('services');
+        Route::get('/profile', fn(string $mitra) => redirect()->route('owner.mitra.dashboard.unit', ['mitra' => $mitra, 'tab' => 'profil']))->name('profile');
     });
 
     // ADMIN (role: admin)
@@ -157,8 +158,11 @@ Route::middleware('auth')->group(function () {
         Route::view('/pricing', 'admin.pricing')->name('pricing');
         Route::view('/banner', 'admin.banner-promo')->name('banner');
 
-        // Kelola Artikel
-        Route::get('/articles', fn () => view('admin.article'))->name('articles');
+        //Kelola Article
+        Route::get('/artikel', [AdminArticleController::class, 'index'])->name('articles');
+        Route::post('/artikel', [AdminArticleController::class, 'store'])->name('articles.store');
+        Route::put('/artikel/{id}', [AdminArticleController::class, 'update'])->name('articles.update');
+        Route::delete('/artikel/{id}', [AdminArticleController::class, 'destroy'])->name('articles.destroy');
 
         // Backup Data
         Route::get('/backup', [AdminBackupController::class, 'index'])->name('backup');

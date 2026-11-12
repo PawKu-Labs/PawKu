@@ -287,78 +287,6 @@
 
 @section('content')
     @php
-        // ------------------------------------------------------------------
-        // DATA DUMMY ARTIKEL (nanti ganti dengan data dari controller/DB)
-        // ------------------------------------------------------------------
-        $articles = $articles ?? [
-            [
-                'id' => 'a1',
-                'title' => '5 Tanda Kucing Kamu Sedang Stres dan Cara Mengatasinya',
-                'description' => 'Kucing sering menyembunyikan rasa tidak nyaman. Kenali perubahan nafsu makan, kebiasaan grooming, dan perilaku bersembunyi sebelum masalahnya menjadi lebih serius.',
-                'category' => 'Kucing',
-                'author' => 'Admin PawKu',
-                'status' => 'publish',
-                'views' => 1284,
-                'date' => '2026-10-10',
-                'image' => 'https://picsum.photos/seed/pawku1/1000/600',
-            ],
-            [
-                'id' => 'a2',
-                'title' => 'Jadwal Vaksin Anjing yang Wajib Diketahui Pemilik Baru',
-                'description' => 'Vaksinasi sejak dini melindungi anjing dari penyakit berbahaya. Simak kapan vaksin pertama diberikan dan seberapa sering pengulangannya dilakukan.',
-                'category' => 'Anjing',
-                'author' => 'drh. Sinta',
-                'status' => 'publish',
-                'views' => 932,
-                'date' => '2026-10-07',
-                'image' => 'https://picsum.photos/seed/pawku2/1000/600',
-            ],
-            [
-                'id' => 'a3',
-                'title' => 'Memilih Makanan Kering yang Tepat untuk Hewan Kesayangan',
-                'description' => 'Tidak semua makanan cocok untuk setiap usia dan ukuran. Pelajari cara membaca label komposisi agar nutrisi harian hewanmu tercukupi dengan baik.',
-                'category' => 'Nutrisi',
-                'author' => 'Admin PawKu',
-                'status' => 'publish',
-                'views' => 756,
-                'date' => '2026-10-03',
-                'image' => 'https://picsum.photos/seed/pawku3/1000/600',
-            ],
-            [
-                'id' => 'a4',
-                'title' => 'Cara Memotong Kuku Kucing Tanpa Drama di Rumah',
-                'description' => 'Memotong kuku bisa jadi momen menegangkan. Ikuti langkah sederhana dan tips membuat kucing tenang agar proses grooming kuku berjalan aman dan nyaman.',
-                'category' => 'Perawatan',
-                'author' => 'Rina Kusuma',
-                'status' => 'draft',
-                'views' => 0,
-                'date' => '2026-10-12',
-                'image' => 'https://picsum.photos/seed/pawku4/1000/600',
-            ],
-            [
-                'id' => 'a5',
-                'title' => 'Mengenal Gejala Awal Kutu dan Jamur pada Kulit Hewan',
-                'description' => 'Garukan berlebihan dan bulu rontok bisa jadi tanda masalah kulit. Kenali gejala awal kutu dan jamur serta langkah penanganan pertama sebelum ke dokter hewan.',
-                'category' => 'Kesehatan',
-                'author' => 'drh. Sinta',
-                'status' => 'publish',
-                'views' => 511,
-                'date' => '2026-09-28',
-                'image' => 'https://picsum.photos/seed/pawku5/1000/600',
-            ],
-            [
-                'id' => 'a6',
-                'title' => 'Tips Membawa Anjing Bepergian Naik Mobil dengan Aman',
-                'description' => 'Perjalanan jauh bisa membuat anjing mabuk atau cemas. Siapkan perlengkapan, atur jeda istirahat, dan biasakan anjing sebelum hari keberangkatan.',
-                'category' => 'Anjing',
-                'author' => 'Admin PawKu',
-                'status' => 'draft',
-                'views' => 0,
-                'date' => '2026-10-13',
-                'image' => 'https://picsum.photos/seed/pawku6/1000/600',
-            ],
-        ];
-
         $bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
         $fmtDate = function ($d) use ($bulan) {
             $t = strtotime($d);
@@ -370,7 +298,6 @@
         $totalPublish = $collection->where('status', 'publish')->count();
         $totalDraft = $collection->where('status', 'draft')->count();
         $totalViews = $collection->sum('views');
-        $categories = $collection->pluck('category')->unique()->values();
         $fallbackImg = 'https://raw.githubusercontent.com/fashaputri/asset/main/pawku.png';
     @endphp
 
@@ -477,8 +404,10 @@
 
                 <div class="article-actions">
                     <button type="button" class="btn btn-outline" data-article="{{ json_encode($a) }}"
-                        onclick="openModal(JSON.parse(this.dataset.article))">Edit</button>
+                        data-action="{{ route('admin.articles.update', $a['id']) }}"
+                        onclick="openModal(JSON.parse(this.dataset.article), this.dataset.action)">Edit</button>
                     <button type="button" class="btn btn-danger" data-title="{{ $a['title'] }}"
+                        data-action="{{ route('admin.articles.destroy', $a['id']) }}"
                         onclick="confirmDelete(this)">Hapus</button>
                 </div>
             </article>
@@ -491,80 +420,93 @@
     </div>
 
     <!-- Modal Tambah / Edit (dummy, belum tersambung ke database) -->
+    <form id="deleteForm" method="POST" hidden>
+        @csrf
+        @method('DELETE')
+    </form>
+
     <dialog id="articleModal">
-        <div class="modal-header">
-            <div class="modal-title" id="modalTitle">Tambah Artikel</div>
-            <button class="modal-close" type="button" aria-label="Tutup" onclick="closeModal()">&times;</button>
-        </div>
+        <form id="articleForm" method="POST" action="{{ route('admin.articles.store') }}" enctype="multipart/form-data">
+            @csrf
+            <input type="hidden" name="_method" id="fMethod" value="POST" disabled>
+            <input type="hidden" name="remove_image" id="fRemoveImage" value="0">
 
-        <div class="form-stack">
-            <div class="field">
-                <label for="fTitle">Judul</label>
-                <input type="text" id="fTitle" class="input" placeholder="Judul artikel">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">Tambah Artikel</div>
+                <button class="modal-close" type="button" aria-label="Tutup" onclick="closeModal()">&times;</button>
             </div>
 
-            <div class="form-row">
+            <div class="form-stack">
                 <div class="field">
-                    <label for="fCategory">Kategori</label>
-                    <select id="fCategory" class="input">
-                        @foreach($categories as $cat)
-                            <option value="{{ $cat }}">{{ $cat }}</option>
-                        @endforeach
-                    </select>
+                    <label for="fTitle">Judul</label>
+                    <input type="text" id="fTitle" name="title" class="input" placeholder="Judul artikel" required
+                        maxlength="200">
                 </div>
-                <div class="field">
-                    <label for="fStatus">Status</label>
-                    <select id="fStatus" class="input">
-                        <option value="publish">Terbit</option>
-                        <option value="draft">Draf</option>
-                    </select>
-                </div>
-            </div>
 
-            <div class="field">
-                <label>Gambar Artikel</label>
-                <input type="file" id="fImage" accept="image/png,image/jpeg,image/webp" hidden>
-                <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Unggah gambar artikel">
-                    <div class="dropzone-empty">
-                        <div class="dropzone-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="17 8 12 3 7 8"></polyline>
-                                <line x1="12" y1="3" x2="12" y2="15"></line>
-                            </svg>
-                        </div>
-                        <div class="dropzone-text">Tarik &amp; lepas gambar di sini, atau <span>pilih file</span></div>
-                        <div class="dropzone-hint">JPG, PNG, atau WEBP. Maksimal 2 MB. Rasio 16:9 disarankan.</div>
+                <div class="form-row">
+                    <div class="field">
+                        <label for="fCategory">Kategori</label>
+                        <select id="fCategory" name="category" class="input" required>
+                            @foreach($categories as $cat)
+                                <option value="{{ $cat }}">{{ $cat }}</option>
+                            @endforeach
+                        </select>
                     </div>
-                    <div class="dropzone-preview">
-                        <img id="dzImg" src="" alt="Pratinjau gambar">
-                        <div class="dropzone-actions">
-                            <button type="button" class="dz-btn" id="dzChange">Ganti</button>
-                            <button type="button" class="dz-btn danger" id="dzRemove">Hapus</button>
-                        </div>
-                        <div class="dropzone-filename" id="dzName"></div>
+                    <div class="field">
+                        <label for="fStatus">Status</label>
+                        <select id="fStatus" name="status" class="input">
+                            <option value="publish">Terbit</option>
+                            <option value="draft">Draf</option>
+                        </select>
                     </div>
                 </div>
-                <div class="dz-error" id="dzError" role="alert"></div>
+
+                <div class="field">
+                    <label>Gambar Artikel</label>
+                    <input type="file" id="fImage" name="image" accept="image/png,image/jpeg,image/webp" hidden>
+                    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Unggah gambar artikel">
+                        <div class="dropzone-empty">
+                            <div class="dropzone-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                            </div>
+                            <div class="dropzone-text">Tarik &amp; lepas gambar di sini, atau <span>pilih file</span></div>
+                            <div class="dropzone-hint">JPG, PNG, atau WEBP. Maksimal 2 MB. Rasio 16:9 disarankan.</div>
+                        </div>
+                        <div class="dropzone-preview">
+                            <img id="dzImg" src="" alt="Pratinjau gambar">
+                            <div class="dropzone-actions">
+                                <button type="button" class="dz-btn" id="dzChange">Ganti</button>
+                                <button type="button" class="dz-btn danger" id="dzRemove">Hapus</button>
+                            </div>
+                            <div class="dropzone-filename" id="dzName"></div>
+                        </div>
+                    </div>
+                    <div class="dz-error" id="dzError" role="alert"></div>
+                </div>
+
+                <div class="field">
+                    <label for="fDesc">Deskripsi Singkat</label>
+                    <textarea id="fDesc" name="description" class="input" required maxlength="300"
+                        placeholder="Ringkasan untuk kartu di Beranda"></textarea>
+                </div>
+
+                <div class="field">
+                    <label for="fContent">Isi Artikel</label>
+                    <textarea id="fContent" name="content" class="input" style="min-height:140px;"
+                        placeholder="Pisahkan antar paragraf dengan baris kosong"></textarea>
+                </div>
             </div>
 
-            <div class="field">
-                <label for="fDesc">Deskripsi Singkat</label>
-                <textarea id="fDesc" class="input" placeholder="Ringkasan untuk kartu di Beranda"></textarea>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal()">Batal</button>
+                <button type="submit" class="btn btn-primary" id="btnSave">Simpan</button>
             </div>
-
-            <div class="field">
-                <label for="fContent">Isi Artikel</label>
-                <textarea id="fContent" class="input" style="min-height:140px;"
-                    placeholder="Pisahkan antar paragraf dengan baris kosong"></textarea>
-            </div>
-        </div>
-
-        <div class="modal-footer">
-            <button type="button" class="btn btn-outline" onclick="closeModal()">Batal</button>
-            <button type="button" class="btn btn-primary" onclick="saveArticle()">Simpan</button>
-        </div>
+        </form>
     </dialog>
 
     @push('scripts')
@@ -605,7 +547,7 @@
             function confirmDelete(btn) {
                 Swal.fire({
                     title: 'Hapus artikel?',
-                    text: '"' + btn.dataset.title + '" akan dihapus dari daftar.',
+                    text: '"' + btn.dataset.title + '" beserta gambarnya akan dihapus permanen.',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#ef4444',
@@ -615,9 +557,9 @@
                     reverseButtons: true,
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        btn.closest('.article-card').remove();
-                        applyFilter();
-                        Swal.fire({ icon: 'success', title: 'Terhapus', text: 'Artikel berhasil dihapus (dummy).', timer: 2200, showConfirmButton: false, toast: true, position: 'top-end' });
+                        const f = document.getElementById('deleteForm');
+                        f.action = btn.dataset.action;
+                        f.submit();
                     }
                 });
             }
@@ -679,8 +621,13 @@
                     fileInput.click();
                 }
             });
-            document.getElementById('dzChange').addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
-            document.getElementById('dzRemove').addEventListener('click', e => { e.stopPropagation(); showDzError(''); setPreview(''); });
+            document.getElementById('dzChange')?.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+            document.getElementById('dzRemove')?.addEventListener('click', e => {
+                e.stopPropagation();
+                showDzError('');
+                setPreview('');
+                document.getElementById('fRemoveImage').value = '1';
+            });
             fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
 
             ['dragenter', 'dragover'].forEach(ev => dropzone.addEventListener(ev, e => {
@@ -707,23 +654,44 @@
 
             // ----- Modal tambah / edit -----
             const modal = document.getElementById('articleModal');
+            const form = document.getElementById('articleForm');
+            const STORE_URL = @json(route('admin.articles.store'));
 
-            function openModal(article) {
+            function openModal(article, action) {
                 const isEdit = !!article;
                 document.getElementById('modalTitle').textContent = isEdit ? 'Edit Artikel' : 'Tambah Artikel';
+
+                const b = document.getElementById('btnSave');
+                b.disabled = false;
+                b.textContent = isEdit ? 'Simpan Perubahan' : 'Simpan';
+
+                form.action = isEdit ? action : STORE_URL;
+                const method = document.getElementById('fMethod');
+                method.value = 'PUT';
+                method.disabled = !isEdit;           // hanya kirim _method=PUT saat edit
+
                 document.getElementById('fTitle').value = isEdit ? article.title : '';
-                document.getElementById('fCategory').value = isEdit ? article.category : document.getElementById('fCategory').options[0].value;
+                document.getElementById('fCategory').value = isEdit ? article.category : (document.getElementById('fCategory').options[0]?.value || '');
                 document.getElementById('fStatus').value = isEdit ? article.status : 'publish';
-                showDzError('');
-                setPreview(isEdit ? article.image : '', isEdit ? 'Gambar saat ini' : '');
                 document.getElementById('fDesc').value = isEdit ? article.description : '';
-                document.getElementById('fContent').value = '';
+                document.getElementById('fContent').value = isEdit ? (article.content || '') : '';
+                document.getElementById('fRemoveImage').value = '0';
+
+                showDzError('');
+                setPreview(isEdit && article.has_image ? article.image : '', isEdit && article.has_image ? 'Gambar saat ini' : '');
+                fileInput.value = '';
+
                 modal.showModal();
             }
 
-            function closeModal() {
-                modal.close();
-            }
+            function closeModal() { modal.close(); }
+
+            // cegah klik ganda saat submit
+            form.addEventListener('submit', () => {
+                const b = document.getElementById('btnSave');
+                b.disabled = true;
+                b.textContent = 'Menyimpan...';
+            });
 
             // Tutup hanya saat klik langsung pada backdrop (bukan klik dari dalam dialog)
             modal.addEventListener('click', e => {
@@ -732,16 +700,6 @@
                 const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
                 if (!inside) closeModal();
             });
-
-            function saveArticle() {
-                closeModal();
-                Swal.fire({
-                    title: 'Tersimpan (dummy)',
-                    text: 'Data belum disimpan ke database. Hubungkan ke controller nanti.',
-                    icon: 'info',
-                    confirmButtonColor: '#1677ff',
-                });
-            }
         </script>
     @endpush
 @endsection
