@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminBackupController;
 use App\Http\Controllers\AdminArticleController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DokterController;
 use App\Http\Controllers\MitraDashboardController;
 use App\Http\Controllers\MitraProfileController;
 use App\Http\Controllers\OwnerBookingController;
@@ -185,3 +186,23 @@ Route::middleware('auth')->group(function () {
         Route::post('/admins/{id}/action', [SuperAdminController::class, 'adminAction'])->name('admins.action');
     });
 });
+
+// DOKTER (Prototipe / Bebas akses)
+Route::prefix('dokter')
+    ->name('dokter.')
+    ->group(function () {
+        Route::get('/', [DokterController::class, 'dashboard'])->name('dashboard');
+
+        Route::get('/pasien', [DokterController::class, 'pasien'])->name('pasien');
+        Route::get('/pasien/{id}', [DokterController::class, 'pasienShow'])->name('pasien.show');
+
+        Route::get('/pemeriksaan/baru', [DokterController::class, 'pemeriksaanCreate'])->name('pemeriksaan.create');
+        Route::post('/pemeriksaan', [DokterController::class, 'pemeriksaanStore'])->name('pemeriksaan.store');
+
+        Route::get('/rekam-medis', [DokterController::class, 'rekamMedis'])->name('rekam-medis');
+
+        Route::get('/profil', [DokterController::class, 'profil'])->name('profil');
+        Route::put('/profil', [DokterController::class, 'profilUpdate'])->name('profil.update');
+
+        Route::post('/klinik/ganti', [DokterController::class, 'switchKlinik'])->name('klinik.switch');
+    });
