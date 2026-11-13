@@ -1,5 +1,4 @@
 <?php
-
 use App\Http\Controllers\AdminBackupController;
 use App\Http\Controllers\AdminArticleController;
 use App\Http\Controllers\AdminDashboardController;
@@ -30,12 +29,12 @@ if (!defined('UUID_PATTERN')) {
 // Halaman Publik
 Route::get('/', fn() => view('index'))->name('home');
 
-    // KALKULATOR BERAT BADAN (cek status obesitas)
-    Route::get('/kalkulator-bb', [KalkulatorBbController::class, 'index'])
-        ->name('kalkulator_bb.index');
-    Route::post('/kalkulator-bb', [KalkulatorBbController::class, 'hitung'])
-        ->middleware('throttle:30,1')
-        ->name('kalkulator_bb.hitung');
+// KALKULATOR BERAT BADAN (cek status obesitas)
+Route::get('/kalkulator-bb', [KalkulatorBbController::class, 'index'])
+    ->name('kalkulator_bb.index');
+Route::post('/kalkulator-bb', [KalkulatorBbController::class, 'hitung'])
+    ->middleware('throttle:30,1')
+    ->name('kalkulator_bb.hitung');
 
 // Cari Petshop (publik). Hanya Mitra berstatus approved; jam operasional & ulasan khusus user login (dijaga di controller).
 Route::get('/petshops', [PetshopController::class, 'index'])->name('petshops.index');
@@ -125,6 +124,20 @@ Route::middleware('auth')->group(function () {
             ->where(['mitra' => UUID_PATTERN, 'service' => UUID_PATTERN])
             ->name('mitra.service.toggle');
 
+        // Kelola tim klinik (khusus PAW_HEALTH): buat akun admin klinik & dokter
+        Route::post('/mitra/{mitra}/members', [MitraDashboardController::class, 'memberStore'])
+            ->where('mitra', UUID_PATTERN)->middleware('throttle:20,1')
+            ->name('mitra.member.store');
+        Route::patch('/mitra/{mitra}/members/{member}/toggle', [MitraDashboardController::class, 'memberToggle'])
+            ->where(['mitra' => UUID_PATTERN, 'member' => UUID_PATTERN])
+            ->name('mitra.member.toggle');
+        Route::patch('/mitra/{mitra}/members/{member}/password', [MitraDashboardController::class, 'memberResetPassword'])
+            ->where(['mitra' => UUID_PATTERN, 'member' => UUID_PATTERN])->middleware('throttle:10,1')
+            ->name('mitra.member.password');
+        Route::delete('/mitra/{mitra}/members/{member}', [MitraDashboardController::class, 'memberDestroy'])
+            ->where(['mitra' => UUID_PATTERN, 'member' => UUID_PATTERN])
+            ->name('mitra.member.destroy');
+
         // Profil mitra: ganti/hapus foto profil (logo_url) dan ubah nama + deskripsi
         Route::put('/mitra/{mitra}/profile', [MitraProfileController::class, 'updateInfo'])
             ->where('mitra', UUID_PATTERN)->middleware('throttle:20,1')
@@ -168,7 +181,7 @@ Route::middleware('auth')->group(function () {
         Route::view('/pricing', 'admin.pricing')->name('pricing');
         Route::view('/banner', 'admin.banner-promo')->name('banner');
 
-        //Kelola Article
+        // Kelola Article
         Route::get('/artikel', [AdminArticleController::class, 'index'])->name('articles');
         Route::post('/artikel', [AdminArticleController::class, 'store'])->name('articles.store');
         Route::put('/artikel/{id}', [AdminArticleController::class, 'update'])->name('articles.update');

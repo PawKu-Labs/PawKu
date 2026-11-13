@@ -56,7 +56,7 @@
     .mitra-floating-nav {
         background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
         border: 1px solid rgba(226, 232, 240, 0.9); border-radius: 28px; padding: 6px;
-        display: flex; gap: 6px; box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08); max-width: 640px;
+        display: flex; gap: 6px; box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08); max-width: 760px;
     }
 
     .nav-tab-btn {
@@ -227,7 +227,19 @@
         return $d;
     };
 
-    $tabs = ['beranda', 'booking', 'layanan', 'profil'];
+    $tabs = ['beranda', 'booking', 'layanan', 'member', 'profil'];
+
+    // ===== Tim klinik (khusus PAW_HEALTH) =====
+    $isHealthMitra = strtoupper($activeMitra->mitra_type ?? '') === 'PAW_HEALTH';
+    $members = $members ?? collect();
+    $memberRoleLabel = ['admin_klinik' => 'Admin Klinik', 'dokter' => 'Dokter Hewan'];
+    $verifLabel = [
+        'pending'  => ['Menunggu Verifikasi', 'p-pending'],
+        'verified' => ['Terverifikasi', 'p-approved'],
+        'rejected' => ['Ditolak', 'p-rejected'],
+    ];
+    // Error pembuatan member (dibedakan dari error profil lewat old('member_role'))
+    $memberFormFailed = $isHealthMitra && $errors->any() && old('member_role');
 @endphp
 
 @if (session('success'))
@@ -294,6 +306,16 @@
             <span>Layanan</span>
             <span class="tab-badge">{{ $stats['services_count'] }}</span>
         </button>
+        @if ($isHealthMitra)
+            <button type="button" data-tab="member" class="nav-tab-btn {{ $currentTab === 'member' ? 'active' : '' }}" onclick="switchMitraTab('member')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                <span>Tim</span>
+                <span class="tab-badge">{{ $members->count() }}</span>
+            </button>
+        @endif
         <button type="button" data-tab="profil" class="nav-tab-btn {{ $currentTab === 'profil' ? 'active' : '' }}" onclick="switchMitraTab('profil')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
@@ -359,6 +381,15 @@
                     <div style="font-size: 12px; color: var(--muted); margin-top: 3px;">Periksa daftar layanan, tarif harga &amp; kuota</div>
                 </div>
             </div>
+            @if ($isHealthMitra)
+                <div class="action-card" onclick="switchMitraTab('member')">
+                    <div class="action-icon" style="background: #e0f2fe; color: #0284c7;">👥</div>
+                    <div>
+                        <div style="font-weight: 700; color: var(--heading); font-size: 14.5px;">Kelola Tim Klinik</div>
+                        <div style="font-size: 12px; color: var(--muted); margin-top: 3px;">Buat akun admin klinik &amp; dokter hewan</div>
+                    </div>
+                </div>
+            @endif
             <div class="action-card" onclick="switchMitraTab('profil')">
                 <div class="action-icon" style="background: #f3e8ff; color: #9333ea;">🏪</div>
                 <div>
@@ -848,6 +879,245 @@
     .custom-fac-tag button { background:none; border:none; cursor:pointer; color:{{ $accent['color'] }}; font-size:13px; line-height:1; padding:0; }
 </style>
 
+{{-- ============================================================= --}}
+{{-- TAB: TIM KLINIK (khusus PAW_HEALTH)                           --}}
+{{-- ============================================================= --}}
+@if ($isHealthMitra)
+<style>
+    .mb-input { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:13.5px; box-sizing:border-box; }
+    .mb-input:focus { border-color:#0284c7; outline:none; }
+    .mb-primary { padding:11px; background:#0284c7; color:#fff; border:none; border-radius:10px; font-size:13.5px; font-weight:700; cursor:pointer; }
+    .mb-primary:hover { filter:brightness(.93); }
+    .mb-cancel { padding:11px; background:#f1f5f9; border:none; border-radius:10px; font-size:13.5px; font-weight:600; color:var(--body); cursor:pointer; }
+
+    .role-choice { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .role-card {
+        text-align:left; padding:12px 14px; border:2px solid var(--border); border-radius:12px;
+        background:#fff; cursor:pointer; transition:.15s; font-family:inherit;
+    }
+    .role-card:hover { border-color:#7dd3fc; }
+    .role-card.active { border-color:#0284c7; background:#f0f9ff; }
+    .role-card .rc-title { font-size:14px; font-weight:700; color:var(--heading); }
+    .role-card .rc-desc { font-size:11.5px; color:var(--muted); margin-top:3px; line-height:1.4; }
+</style>
+
+<div id="panel-member" class="tab-panel {{ $currentTab === 'member' ? 'active' : '' }}">
+    <section>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+            <div>
+                <h2 style="font-size:18px;font-weight:700;color:var(--heading);">Tim Klinik</h2>
+                <p style="font-size:13px;color:var(--muted);margin-top:2px;">
+                    Buat akun admin klinik dan dokter hewan untuk {{ $activeMitra->name }}. Mereka login memakai email dan password yang Anda buat.
+                </p>
+            </div>
+            <button type="button" class="mb-primary" style="padding:10px 18px;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 12px #0284c744;" onclick="openMemberModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Tambah Member
+            </button>
+        </div>
+
+        @if ($members->isEmpty())
+            <div class="card" style="text-align:center;padding:56px 20px;color:var(--muted);">
+                <div style="font-size:44px;margin-bottom:12px;">👥</div>
+                <h3 style="font-size:16px;font-weight:700;color:var(--heading);margin-bottom:6px;">Belum Ada Member</h3>
+                <p style="font-size:13px;margin-bottom:20px;">Buat akun admin klinik atau dokter hewan pertama Anda.</p>
+                <button type="button" class="mb-primary" style="padding:10px 22px;" onclick="openMemberModal()">+ Tambah Sekarang</button>
+            </div>
+        @else
+            <div class="grid g3">
+                @foreach ($members as $mb)
+                    @php
+                        [$vLabel, $vClass] = $verifLabel[$mb->verification_status] ?? ['Menunggu Verifikasi', 'p-pending'];
+                        $mbName = $mb->full_name ?: ($mb->username ?: 'Tanpa Nama');
+                        $mbActive = (bool) $mb->is_active;
+                    @endphp
+                    <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;gap:14px;opacity:{{ $mbActive ? '1' : '0.65' }};">
+                        <div>
+                            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                                <div style="width:44px;height:44px;border-radius:12px;background:#e0f2fe;display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;flex-shrink:0;">
+                                    @if (!empty($mb->avatar_url))
+                                        <img src="{{ $mb->avatar_url }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+                                    @else
+                                        {{ $mb->member_role === 'dokter' ? '🩺' : '🗂️' }}
+                                    @endif
+                                </div>
+                                <div style="min-width:0;">
+                                    <div style="font-weight:700;font-size:14.5px;color:var(--heading);">{{ $mbName }}</div>
+                                    @if (!empty($mb->phone_number))
+                                        <div style="font-size:12px;color:var(--muted);">📱 {{ $mb->phone_number }}</div>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+                                <span class="mitra-type-badge type-paw-health">{{ $memberRoleLabel[$mb->member_role] ?? $mb->member_role }}</span>
+                                <span class="pill {{ $vClass }}" style="font-size:10.5px;">{{ $vLabel }}</span>
+                                @unless ($mbActive)
+                                    <span class="pill p-rejected" style="font-size:10.5px;">Nonaktif</span>
+                                @endunless
+                            </div>
+
+                            @if ($mb->member_role === 'dokter')
+                                @if (!empty($mb->specialization))
+                                    <div style="font-size:12.5px;color:var(--muted);margin-bottom:3px;">🎓 {{ $mb->specialization }}</div>
+                                @endif
+                                @if (!empty($mb->str_number))
+                                    <div style="font-size:12.5px;color:var(--muted);margin-bottom:3px;">STR: <strong>{{ $mb->str_number }}</strong></div>
+                                @endif
+                                @if (!empty($mb->sip_number))
+                                    <div style="font-size:12.5px;color:var(--muted);margin-bottom:3px;">SIP: <strong>{{ $mb->sip_number }}</strong></div>
+                                @endif
+                            @endif
+
+                            @if ($mb->verification_status === 'rejected' && !empty($mb->rejection_reason))
+                                <div style="font-size:12px;color:#be123c;background:#fff1f2;padding:8px 10px;border-radius:6px;margin-top:6px;">
+                                    Alasan ditolak: {{ $mb->rejection_reason }}
+                                </div>
+                            @endif
+                        </div>
+
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid #f1f5f9;padding-top:10px;">
+                            <button type="button" class="btn-action-sm btn-serve"
+                                onclick="openResetModal({{ Js::from($mb->id) }}, {{ Js::from($mbName) }})">🔑 Reset Password</button>
+
+                            <form action="{{ route('owner.mitra.member.toggle', ['mitra' => $mitraId, 'member' => $mb->id]) }}" method="POST" style="display:inline;">
+                                @csrf @method('PATCH')
+                                <button type="submit" class="btn-action-sm {{ $mbActive ? 'btn-finish' : 'btn-confirm' }}">
+                                    {{ $mbActive ? '⏸ Nonaktifkan' : '▶ Aktifkan' }}
+                                </button>
+                            </form>
+
+                            <form action="{{ route('owner.mitra.member.destroy', ['mitra' => $mitraId, 'member' => $mb->id]) }}" method="POST" style="display:inline;"
+                                  onsubmit="return confirm({{ Js::from('Keluarkan ' . $mbName . ' dari tim klinik?') }})">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="btn-action-sm btn-reject">🗑 Keluarkan</button>
+                            </form>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </section>
+</div>
+
+{{-- MODAL: BUAT AKUN MEMBER --}}
+<div id="member-modal" class="modal-overlay" onclick="closeMemberModal()">
+    <div class="modal-box" style="max-width:540px;max-height:92vh;" onclick="event.stopPropagation()">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:44px;height:44px;border-radius:12px;background:#e0f2fe;display:flex;align-items:center;justify-content:center;font-size:20px;">👥</div>
+                <div>
+                    <h3 style="font-size:16px;font-weight:700;color:var(--heading);">Tambah Member</h3>
+                    <p style="font-size:12px;color:var(--muted);">Buat akun login untuk anggota tim klinik</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeMemberModal()" style="background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;">✕</button>
+        </div>
+
+        @if ($memberFormFailed)
+            <div class="alert alert-err" style="margin-bottom:14px;">
+                @foreach ($errors->all() as $e)<div>⚠️ {{ $e }}</div>@endforeach
+            </div>
+        @endif
+
+        <form id="member-form" method="POST" action="{{ route('owner.mitra.member.store', $mitraId) }}" autocomplete="off">
+            @csrf
+            <input type="hidden" id="member-role" name="member_role" value="{{ old('member_role', 'admin_klinik') }}">
+
+            <div style="display:flex;flex-direction:column;gap:16px;">
+
+                {{-- Pilih peran --}}
+                <div>
+                    <label class="svc-label">Pilih Peran</label>
+                    <div class="role-choice">
+                        <button type="button" class="role-card active" data-role="admin_klinik" onclick="setMemberRole('admin_klinik')">
+                            <div class="rc-title">🗂️ Admin Klinik</div>
+                            <div class="rc-desc">Mengelola booking, antrean, dan layanan klinik.</div>
+                        </button>
+                        <button type="button" class="role-card" data-role="dokter" onclick="setMemberRole('dokter')">
+                            <div class="rc-title">🩺 Dokter Hewan</div>
+                            <div class="rc-desc">Memeriksa pasien dan mengisi rekam medis.</div>
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Field umum (admin & dokter) --}}
+                <div>
+                    <label class="svc-label">Nama Lengkap</label>
+                    <input class="mb-input" type="text" name="full_name" required maxlength="100"
+                        value="{{ old('full_name') }}" placeholder="Misal: Budi Santoso">
+                </div>
+                <div>
+                    <label class="svc-label">Email (untuk login)</label>
+                    <input class="mb-input" type="email" name="email" required maxlength="120"
+                        value="{{ old('email') }}" placeholder="budi@klinik.com">
+                </div>
+                <div>
+                    <label class="svc-label">Nomor HP (opsional)</label>
+                    <input class="mb-input" type="text" name="phone_number" maxlength="20"
+                        value="{{ old('phone_number') }}" placeholder="08123456789">
+                </div>
+                <div>
+                    <label class="svc-label">Password Awal</label>
+                    <div style="display:flex;gap:8px;">
+                        <input class="mb-input" style="flex:1;" type="text" id="member-password" name="password" required
+                            minlength="8" maxlength="72" autocomplete="new-password" placeholder="Min. 8 karakter, huruf besar, kecil, angka &amp; simbol">
+                        <button type="button" class="pf-btn" onclick="generateMemberPassword()">🎲 Acak</button>
+                    </div>
+                    <p class="pf-note">Password harus mengandung huruf besar, huruf kecil, angka, dan simbol. Catat lalu berikan email dan password ini ke yang bersangkutan.</p>
+                </div>
+
+                {{-- Field khusus dokter hewan --}}
+                <div id="member-dokter-fields" style="display:none;flex-direction:column;gap:16px;">
+                    <div style="border-top:1px dashed var(--border);padding-top:14px;font-size:12px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:.4px;">
+                        Data Dokter Hewan
+                    </div>
+                    <div>
+                        <label class="svc-label">Nomor STR</label>
+                        <input class="mb-input" type="text" id="member-str" name="str_number" maxlength="60"
+                            value="{{ old('str_number') }}" placeholder="Surat Tanda Registrasi">
+                    </div>
+                    <div>
+                        <label class="svc-label">Nomor SIP (opsional)</label>
+                        <input class="mb-input" type="text" name="sip_number" maxlength="60"
+                            value="{{ old('sip_number') }}" placeholder="Surat Izin Praktik">
+                    </div>
+                    <div>
+                        <label class="svc-label">Spesialisasi (opsional)</label>
+                        <input class="mb-input" type="text" name="specialization" maxlength="100"
+                            value="{{ old('specialization') }}" placeholder="Misal: Bedah, Dermatologi">
+                    </div>
+                    <div class="pf-note" style="background:#fef3c7;color:#b45309;padding:10px 12px;border-radius:8px;margin:0;">
+                        Dokter hewan berstatus <strong>Menunggu Verifikasi</strong> sampai STR/SIP diperiksa admin PawKu.
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:22px;">
+                <button type="button" class="mb-cancel" style="flex:1;" onclick="closeMemberModal()">Batal</button>
+                <button type="submit" class="mb-primary" style="flex:2;">Buat Akun &amp; Tambahkan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- MODAL: RESET PASSWORD --}}
+<div id="reset-modal" class="modal-overlay" onclick="closeResetModal()">
+    <div class="modal-box" style="max-width:400px;" onclick="event.stopPropagation()">
+        <h3 style="font-size:16px;font-weight:700;color:var(--heading);margin-bottom:4px;">Reset Password</h3>
+        <p id="reset-name" style="font-size:12.5px;color:var(--muted);margin-bottom:14px;"></p>
+        <form id="reset-form" method="POST" autocomplete="off">
+            @csrf @method('PATCH')
+            <input class="mb-input" type="text" name="password" required minlength="8" maxlength="72"
+                autocomplete="new-password" placeholder="Password baru (huruf besar, kecil, angka &amp; simbol)">
+            <div style="display:flex;gap:10px;margin-top:16px;">
+                <button type="button" class="mb-cancel" style="flex:1;" onclick="closeResetModal()">Batal</button>
+                <button type="submit" class="mb-primary" style="flex:2;">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
 
 {{-- TAB 4: PROFIL --}}
 <div id="panel-profil" class="tab-panel {{ $currentTab === 'profil' ? 'active' : '' }}">
@@ -883,7 +1153,7 @@
         @media (max-width: 480px) { .pf-head { flex-direction: column; } }
     </style>
 
-    @if ($errors->any())
+    @if ($errors->any() && !$memberFormFailed)
         <div class="alert alert-err" style="margin-bottom: 14px;">
             @foreach ($errors->all() as $pfErr)
                 <div>⚠️ {{ $pfErr }}</div>
@@ -1099,10 +1369,10 @@
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 @foreach ($userMitras as $mItem)
                     @php
-    $mMeta = $metaOf($mItem);
-    $isActiveItem = ((string) $mItem->id === (string) $activeMitra->id);
-    $mHref = \App\Support\MitraUrl::for($mItem) ?? '#';
-@endphp
+                        $mMeta = $metaOf($mItem);
+                        $isActiveItem = ((string) $mItem->id === (string) $activeMitra->id);
+                        $mHref = \App\Support\MitraUrl::for($mItem) ?? '#';
+                    @endphp
                     <a href="{{ $mHref }}"
                        style="display: flex; align-items: center; justify-content: space-between; padding: 14px; border-radius: var(--r); border: 2px solid {{ $isActiveItem ? 'var(--primary)' : 'var(--border)' }}; background: {{ $isActiveItem ? 'var(--primary-light)' : '#fff' }}; text-decoration: none; transition: .2s;">
                         <div style="display: flex; align-items: center; gap: 12px;">
@@ -1156,7 +1426,12 @@
     }
 
     document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') { closeMitraSwitcher(); closeServiceModal(); }
+        if (e.key === 'Escape') {
+            closeMitraSwitcher();
+            closeServiceModal();
+            closeMemberModal();
+            closeResetModal();
+        }
     });
 
     function filterBookings(status, btn) {
@@ -1499,6 +1774,91 @@
         var el = document.getElementById(id);
         if (el) el.addEventListener('input', updateCapacitySummary);
     });
+
+    // ---------------------------------------------------------------
+    // Tim klinik (khusus PAW_HEALTH)
+    // ---------------------------------------------------------------
+    var _memberBase = '{{ url("owner/mitra/" . $mitraId . "/members") }}';
+
+    function setMemberRole(role) {
+        var roleInput = document.getElementById('member-role');
+        if (!roleInput) return;
+        roleInput.value = role;
+
+        document.querySelectorAll('.role-card[data-role]').forEach(function (b) {
+            b.classList.toggle('active', b.dataset.role === role);
+        });
+
+        var isDokter = role === 'dokter';
+        document.getElementById('member-dokter-fields').style.display = isDokter ? 'flex' : 'none';
+        document.getElementById('member-str').required = isDokter;
+    }
+
+    function openMemberModal(keepInput) {
+        var m = document.getElementById('member-modal');
+        if (!m) return;
+        if (!keepInput) {
+            document.getElementById('member-form').reset();
+            setMemberRole('admin_klinik');
+        }
+        m.classList.add('open');
+    }
+
+    function closeMemberModal() {
+        var m = document.getElementById('member-modal');
+        if (m) m.classList.remove('open');
+    }
+
+    // Password acak yang memenuhi kebijakan Supabase:
+    // wajib ada huruf kecil, huruf besar, angka, dan simbol.
+    function generateMemberPassword() {
+        var lower = 'abcdefghijkmnpqrstuvwxyz';
+        var upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        var digits = '23456789';
+        var symbols = '!@#$%^&*_-+=?';
+        var all = lower + upper + digits + symbols;
+
+        function rnd(max) {
+            var a = new Uint32Array(1);
+            crypto.getRandomValues(a);
+            return a[0] % max;
+        }
+        function pick(set) { return set.charAt(rnd(set.length)); }
+
+        // Pastikan minimal satu dari tiap jenis, sisanya acak
+        var chars = [pick(lower), pick(upper), pick(digits), pick(symbols)];
+        while (chars.length < 12) chars.push(pick(all));
+
+        // Acak urutan karakter
+        for (var i = chars.length - 1; i > 0; i--) {
+            var j = rnd(i + 1);
+            var t = chars[i]; chars[i] = chars[j]; chars[j] = t;
+        }
+
+        document.getElementById('member-password').value = chars.join('');
+    }
+
+    function openResetModal(id, name) {
+        document.getElementById('reset-name').textContent = 'Untuk: ' + name;
+        var f = document.getElementById('reset-form');
+        f.reset();
+        f.action = _memberBase + '/' + id + '/password';
+        document.getElementById('reset-modal').classList.add('open');
+    }
+
+    function closeResetModal() {
+        var m = document.getElementById('reset-modal');
+        if (m) m.classList.remove('open');
+    }
+
+    @if ($isHealthMitra)
+    document.addEventListener('DOMContentLoaded', function () {
+        setMemberRole({{ Js::from(old('member_role', 'admin_klinik')) }});
+        @if ($memberFormFailed)
+            openMemberModal(true);
+        @endif
+    });
+    @endif
 </script>
 @endif
 @endsection

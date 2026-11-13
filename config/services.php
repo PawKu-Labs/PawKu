@@ -39,6 +39,7 @@ return [
         'url' => env('SUPABASE_URL'),
         'anon_key' => env('SUPABASE_ANON_KEY'),
         'service_role_key' => env('SUPABASE_SERVICE_ROLE_KEY'),
+        'service_key' => env('SUPABASE_SERVICE_ROLE_KEY'), // alias, dipakai MitraDashboardController
         'bucket' => env('SUPABASE_MITRA_BUCKET', 'petshop-photos'),
         'cats_bucket' => env('SUPABASE_CATS_BUCKET', 'cat-photos'),
     ],

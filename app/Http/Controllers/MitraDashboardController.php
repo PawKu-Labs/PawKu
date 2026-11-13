@@ -7,6 +7,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;       // [BARU] untuk log error Supabase
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -14,7 +16,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
- * Dashboard pengelolaan satu unit mitra (Beranda, Booking, Layanan, Profil).
+ * Dashboard pengelolaan satu unit mitra (Beranda, Booking, Layanan, Tim, Profil).
  *
  * ASUMSI SKEMA (ubah konstanta T_* / kolom di bawah bila nama di database Anda berbeda):
  *   bookings            : id, user_id, cat_id, service_id, [mitra_id], [slot_id], status,
@@ -32,7 +34,7 @@ class MitraDashboardController extends Controller
 {
     private const TZ = 'Asia/Jakarta';
 
-    private const TABS = ['beranda', 'booking', 'layanan', 'profil'];
+    private const TABS = ['beranda', 'booking', 'layanan', 'member', 'profil'];
 
     private const BOOKING_STATUSES = ['menunggu', 'dikonfirmasi', 'dilayani', 'selesai', 'ditolak', 'dibatalkan'];
 
@@ -57,6 +59,10 @@ class MitraDashboardController extends Controller
 
     private const T_REVIEWS = 'reviews';
 
+    private const T_MEMBERS = 'mitra_members';
+
+    private const MAX_MEMBERS = 20;
+
     public function index(Request $request, ?string $mitra = null): View|RedirectResponse
     {
         $userId = $request->session()->get('supabase.user.id');
@@ -80,6 +86,7 @@ class MitraDashboardController extends Controller
                 'currentTab' => 'beranda',
                 'bookings' => collect(),
                 'services' => collect(),
+                'members' => collect(),
                 'operatingHours' => collect(),
                 'stats' => [
                     'total_bookings' => 0,
@@ -109,6 +116,11 @@ class MitraDashboardController extends Controller
         $tab = (string) $request->query('tab', 'beranda');
         $currentTab = in_array($tab, self::TABS, true) ? $tab : 'beranda';
 
+        // Tab member hanya untuk PAW_HEALTH
+        if ($currentTab === 'member' && strtoupper($activeMitra->mitra_type ?? '') !== 'PAW_HEALTH') {
+            $currentTab = 'beranda';
+        }
+
         $bookings = $this->safe(fn () => $this->loadBookings($activeMitra->id), collect());
         $services = $this->safe(
             fn () => DB::table(self::T_SERVICES)->where('mitra_id', $activeMitra->id)->orderBy('name')->get(),
@@ -122,6 +134,12 @@ class MitraDashboardController extends Controller
             return DB::table(self::T_HOURS)->where('mitra_id', $activeMitra->id)->get();
         }, collect());
 
+        // Daftar tim klinik
+        $members = collect();
+        if (strtoupper($activeMitra->mitra_type ?? '') === 'PAW_HEALTH') {
+            $members = $this->safe(fn () => $this->loadMembers($activeMitra->id), collect());
+        }
+
         $stats = $this->buildStats($bookings, $services, $activeMitra->id);
 
         return view('owner.mitra.dashboard', compact(
@@ -131,6 +149,7 @@ class MitraDashboardController extends Controller
             'currentTab',
             'bookings',
             'services',
+            'members',
             'operatingHours',
             'stats'
         ));
@@ -307,8 +326,283 @@ class MitraDashboardController extends Controller
     }
 
     // ---------------------------------------------------------------------
+    // Tim klinik (khusus PAW_HEALTH): buat akun admin klinik & dokter
+    // ---------------------------------------------------------------------
+
+    public function memberStore(Request $request, string $mitra): RedirectResponse
+    {
+        $activeMitra = $this->verifyHealthMitra($request, $mitra);
+        $mitraId = (string) $activeMitra->id;
+
+        $data = $request->validate([
+            'member_role' => ['required', Rule::in(['admin_klinik', 'dokter'])],
+            'full_name' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:120'],
+            'phone_number' => ['nullable', 'string', 'max:20'],
+            'password' => ['required', 'string', 'min:8', 'max:72'],
+            'str_number' => ['required_if:member_role,dokter', 'nullable', 'string', 'max:60'],
+            'sip_number' => ['nullable', 'string', 'max:60'],
+            'specialization' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $back = $this->backToMember($mitraId);
+
+        $count = $this->safe(
+            fn () => DB::table(self::T_MEMBERS)->where('mitra_id', $mitraId)->count(),
+            0
+        );
+        if ($count >= self::MAX_MEMBERS) {
+            return $back->with('error', 'Batas jumlah member ('.self::MAX_MEMBERS.') tercapai.');
+        }
+
+        $isDokter = $data['member_role'] === 'dokter';
+        $email = mb_strtolower(trim($data['email']));
+
+        // Cek konfigurasi lebih dulu supaya penyebabnya jelas
+        if ((string) config('services.supabase.url') === '' || (string) config('services.supabase.service_key') === '') {
+            Log::error('Supabase config kosong: cek services.supabase.url / service_key di config/services.php dan .env, lalu php artisan config:clear');
+
+            return $back->withInput($request->except('password'))
+                ->withErrors(['member' => 'Konfigurasi layanan akun belum lengkap (SUPABASE_URL / service key). Hubungi admin sistem.']);
+        }
+
+        // 1. Buat akun di Supabase Auth
+        try {
+            $res = Http::withHeaders($this->supabaseHeaders())
+                ->timeout(15)
+                ->post($this->supabaseUrl('/auth/v1/admin/users'), [
+                    'email' => $email,
+                    'password' => $data['password'],
+                    'email_confirm' => true,
+                    'user_metadata' => ['full_name' => $data['full_name']],
+                ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return $back->withInput($request->except('password'))
+                ->withErrors(['member' => 'Tidak dapat menghubungi layanan akun. Coba lagi.']);
+        }
+
+        if (! $res->successful()) {
+            // [DIUBAH] catat respon asli supaya penyebab pasti bisa dilihat di storage/logs/laravel.log
+            Log::error('Supabase create user gagal', [
+                'status' => $res->status(),
+                'body' => $res->body(),
+            ]);
+
+            $body = strtolower($res->body());
+            $errorCode = (string) ($res->json('error_code') ?? $res->json('code') ?? '');
+
+            $exists = $errorCode === 'email_exists'
+                || str_contains($body, 'already')
+                || str_contains($body, 'registered');
+
+            $weakPassword = $errorCode === 'weak_password' || str_contains($body, 'password');
+
+            if ($exists) {
+                $msg = 'Email tersebut sudah terdaftar. Gunakan email lain.';
+            } elseif ($weakPassword && $res->status() === 422) {
+                $msg = 'Password ditolak oleh kebijakan keamanan. Gunakan kombinasi huruf besar, huruf kecil, angka, dan simbol.';
+            } elseif ($res->status() === 401 || $res->status() === 403) {
+                $msg = 'Service key Supabase tidak valid atau tidak berwenang. Hubungi admin sistem.';
+            } else {
+                $msg = 'Gagal membuat akun. Coba lagi beberapa saat.';
+            }
+
+            // Saat APP_DEBUG=true tampilkan detail asli supaya mudah dilacak
+            if (config('app.debug')) {
+                $msg .= ' [HTTP '.$res->status().': '.Str::limit($res->body(), 300).']';
+            }
+
+            return $back->withInput($request->except('password'))
+                ->withErrors(['member' => $msg]);
+        }
+
+        $newUserId = (string) $res->json('id');
+
+        // 2 & 3. Profil + keanggotaan mitra
+        try {
+            DB::transaction(function () use ($newUserId, $data, $activeMitra, $mitraId, $isDokter, $email) {
+                DB::table(self::T_PROFILES)->updateOrInsert(
+                    ['id' => $newUserId],
+                    [
+                        'full_name' => $data['full_name'],
+                        'phone_number' => $data['phone_number'] ?: null,
+                        // JANGAN 'admin' / 'super_admin' (itu admin platform PawKu)
+                        'role' => $isDokter ? 'dokter_hewan' : 'pemilik_kucing',
+                        'is_active' => true,
+                        'is_blocked' => false,
+                        'onboarding_completed' => true,
+                        'created_by' => $activeMitra->owner_id,
+                        'created_at' => now(),
+                    ]
+                );
+
+                DB::table(self::T_MEMBERS)->insert([
+                    'id' => Str::uuid()->toString(),
+                    'mitra_id' => $mitraId,
+                    'user_id' => $newUserId,
+                    'member_role' => $data['member_role'],
+                    'str_number' => $isDokter ? $data['str_number'] : null,
+                    'sip_number' => $isDokter ? ($data['sip_number'] ?? null) : null,
+                    'specialization' => $isDokter ? ($data['specialization'] ?? null) : null,
+                    'verification_status' => $isDokter ? 'pending' : 'verified',
+                    'invited_by' => $activeMitra->owner_id,
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                DB::table('activity_logs')->insert([
+                    'actor_id' => (string) $activeMitra->owner_id,
+                    'actor_role' => 'owner_mitra',
+                    'category' => 'mitra_member',
+                    'action' => 'create',
+                    'subject_type' => 'mitra_members',
+                    'subject_id' => $mitraId,
+                    'description' => "Membuat akun {$data['member_role']}: {$email}",
+                    'created_at' => now(),
+                ]);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            // Hapus akun auth supaya tidak ada akun yatim
+            $this->safe(fn () => Http::withHeaders($this->supabaseHeaders())
+                ->delete($this->supabaseUrl("/auth/v1/admin/users/{$newUserId}")), null);
+
+            $msg = 'Gagal menyimpan data member. Akun dibatalkan.';
+            if (config('app.debug')) {
+                $msg .= ' ['.Str::limit($e->getMessage(), 300).']';
+            }
+
+            return $back->withInput($request->except('password'))
+                ->withErrors(['member' => $msg]);
+        }
+
+        return $back->with('success', 'Akun '.$data['full_name'].' berhasil dibuat. Berikan email & password ke yang bersangkutan.');
+    }
+
+    public function memberToggle(Request $request, string $mitra, string $member): RedirectResponse
+    {
+        $activeMitra = $this->verifyHealthMitra($request, $mitra);
+        $back = $this->backToMember((string) $activeMitra->id);
+
+        $row = DB::table(self::T_MEMBERS)->where('id', $member)->where('mitra_id', $activeMitra->id)->first();
+        abort_if(! $row, 404);
+
+        try {
+            DB::table(self::T_MEMBERS)->where('id', $row->id)->update([
+                'is_active' => ! (bool) $row->is_active,
+                'updated_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return $back->with('error', 'Gagal mengubah status member. Coba lagi.');
+        }
+
+        return $back->with('success', 'Status member diperbarui.');
+    }
+
+    public function memberResetPassword(Request $request, string $mitra, string $member): RedirectResponse
+    {
+        $activeMitra = $this->verifyHealthMitra($request, $mitra);
+        $back = $this->backToMember((string) $activeMitra->id);
+
+        $request->validate(['password' => ['required', 'string', 'min:8', 'max:72']]);
+
+        // Hanya akun yang terdaftar di mitra ini yang boleh direset
+        $row = DB::table(self::T_MEMBERS)->where('id', $member)->where('mitra_id', $activeMitra->id)->first();
+        abort_if(! $row, 404);
+
+        try {
+            $res = Http::withHeaders($this->supabaseHeaders())
+                ->timeout(15)
+                ->put($this->supabaseUrl("/auth/v1/admin/users/{$row->user_id}"), [
+                    'password' => $request->input('password'),
+                ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return $back->with('error', 'Gagal mereset password. Coba lagi.');
+        }
+
+        if (! $res->successful()) {
+            Log::error('Supabase reset password gagal', [
+                'status' => $res->status(),
+                'body' => $res->body(),
+            ]);
+
+            return $back->with('error', 'Gagal mereset password. Coba lagi.');
+        }
+
+        return $back->with('success', 'Password berhasil diganti. Berikan password baru ke yang bersangkutan.');
+    }
+
+    public function memberDestroy(Request $request, string $mitra, string $member): RedirectResponse
+    {
+        $activeMitra = $this->verifyHealthMitra($request, $mitra);
+        $back = $this->backToMember((string) $activeMitra->id);
+
+        $row = DB::table(self::T_MEMBERS)->where('id', $member)->where('mitra_id', $activeMitra->id)->first();
+        abort_if(! $row, 404);
+
+        try {
+            DB::table(self::T_MEMBERS)->where('id', $row->id)->delete();
+        } catch (\Throwable $e) {
+            report($e);
+
+            return $back->with('error', 'Gagal mengeluarkan member. Coba lagi.');
+        }
+
+        return $back->with('success', 'Member dikeluarkan dari tim klinik.');
+    }
+
+    // ---------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------
+
+    /** Daftar member + data profil. */
+    private function loadMembers(string $mitraId): Collection
+    {
+        return DB::table(self::T_MEMBERS.' as mm')
+            ->join(self::T_PROFILES.' as p', 'p.id', '=', 'mm.user_id')
+            ->where('mm.mitra_id', $mitraId)
+            ->select('mm.*', 'p.username', 'p.full_name', 'p.phone_number', 'p.avatar_url')
+            ->orderByRaw("CASE mm.member_role WHEN 'admin_klinik' THEN 0 ELSE 1 END")
+            ->orderBy('mm.created_at')
+            ->get();
+    }
+
+    /** Mitra milik owner, approved, dan bertipe PAW_HEALTH. */
+    private function verifyHealthMitra(Request $request, string $mitra): object
+    {
+        $row = $this->verifyMitraOwner($request, $mitra);
+        abort_if(strtoupper($row->mitra_type ?? '') !== 'PAW_HEALTH', 403);
+
+        return $row;
+    }
+
+    private function backToMember(string $mitra): RedirectResponse
+    {
+        return redirect()->route('owner.mitra.dashboard.unit', [
+            'mitra' => strtolower($mitra),
+            'tab' => 'member',
+        ]);
+    }
+
+    private function supabaseHeaders(): array
+    {
+        $key = (string) config('services.supabase.service_key');
+
+        return ['apikey' => $key, 'Authorization' => 'Bearer '.$key];
+    }
+
+    private function supabaseUrl(string $path): string
+    {
+        return rtrim((string) config('services.supabase.url'), '/').$path;
+    }
 
     private function loadBookings(string $mitraId): Collection
     {
