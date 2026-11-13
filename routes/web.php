@@ -13,6 +13,8 @@ use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\OwnerMitraController;
 use App\Http\Controllers\PetshopController;
 use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\KalkulatorBbController;
+
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -27,6 +29,13 @@ if (!defined('UUID_PATTERN')) {
 
 // Halaman Publik
 Route::get('/', fn() => view('index'))->name('home');
+
+    // KALKULATOR BERAT BADAN (cek status obesitas)
+    Route::get('/kalkulator-bb', [KalkulatorBbController::class, 'index'])
+        ->name('kalkulator_bb.index');
+    Route::post('/kalkulator-bb', [KalkulatorBbController::class, 'hitung'])
+        ->middleware('throttle:30,1')
+        ->name('kalkulator_bb.hitung');
 
 // Cari Petshop (publik). Hanya Mitra berstatus approved; jam operasional & ulasan khusus user login (dijaga di controller).
 Route::get('/petshops', [PetshopController::class, 'index'])->name('petshops.index');

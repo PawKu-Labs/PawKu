@@ -59,6 +59,10 @@
                     Pet Care
                 </a>
 
+                <a href="{{ route('kalkulator_bb.index') }}">
+                    Cek Status Berat Badan
+                </a>
+
                 <a href="{{ route('petshops.index') }}">
                     Petshop
                 </a>
