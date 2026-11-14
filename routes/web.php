@@ -2,6 +2,7 @@
 use App\Http\Controllers\AdminBackupController;
 use App\Http\Controllers\AdminArticleController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminMitraController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DokterController;
 use App\Http\Controllers\MitraDashboardController;
@@ -156,6 +157,33 @@ Route::middleware('auth')->group(function () {
             ->where('mitra', UUID_PATTERN)->name('mitra.edit');
         Route::put('/mitra/{mitra}', [OwnerMitraController::class, 'update'])
             ->where('mitra', UUID_PATTERN)->name('mitra.update');
+    });
+
+    // ADMIN KLINIK (member_role = admin_klinik di mitra_members, khusus PAW_HEALTH)
+    // Profil admin klinik berperan pemilik_kucing, jadi middleware role hanya meloloskan sesi login;
+    // keanggotaan klinik diverifikasi langsung di AdminMitraController (mitra_members.user_id = user session).
+    Route::prefix('admin-mitra')->name('admin_mitra.')->middleware('role:pemilik_kucing,mitra')->group(function () {
+        Route::get('/', [AdminMitraController::class, 'index'])->name('index');
+
+        Route::get('/{mitra}/dashboard', [AdminMitraController::class, 'dashboard'])
+            ->where('mitra', UUID_PATTERN)
+            ->name('dashboard');
+
+        Route::get('/{mitra}/booking', [AdminMitraController::class, 'booking'])
+            ->where('mitra', UUID_PATTERN)
+            ->name('booking');
+
+        // Terima / tolak / mulai layani / selesai
+        Route::post('/{mitra}/booking/{booking}/status', [AdminMitraController::class, 'updateStatus'])
+            ->where(['mitra' => UUID_PATTERN, 'booking' => UUID_PATTERN])
+            ->middleware('throttle:60,1')
+            ->name('booking.status');
+
+        // Teruskan booking ke dokter
+        Route::post('/{mitra}/booking/{booking}/dokter', [AdminMitraController::class, 'assignDoctor'])
+            ->where(['mitra' => UUID_PATTERN, 'booking' => UUID_PATTERN])
+            ->middleware('throttle:60,1')
+            ->name('booking.dokter');
     });
 
     // ALIAS & PENGALIHAN RUTE MITRA

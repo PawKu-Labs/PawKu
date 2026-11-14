@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
@@ -156,12 +157,46 @@ class AuthController extends Controller
             'super_admin' => route('superadmin.dashboard'),
             'admin' => route('admin.dashboard'),
             'mitra' => route('owner.mitra'),
-            default => route('owner.dashboard'),
+            'dokter_hewan' => route('dokter.dashboard'),
+            default => $this->isClinicAdminOnly($userId)
+                ? route('admin_mitra.index')
+                : route('owner.dashboard'),
         };
 
         return response()->json([
             'message' => 'Login berhasil! Mengalihkan...',
             'redirect' => $redirectRoute,
         ]);
+    }
+
+    /**
+     * True bila akun ini admin klinik aktif di klinik (PAW_HEALTH) yang sudah disetujui
+     * dan TIDAK memiliki mitra sendiri. Admin klinik berperan pemilik_kucing di profil,
+     * jadi tanpa pengecekan ini ia akan mendarat di dashboard pemilik kucing.
+     */
+    private function isClinicAdminOnly(?string $userId): bool
+    {
+        if (! $userId) {
+            return false;
+        }
+
+        try {
+            if (DB::table('mitras')->where('owner_id', $userId)->exists()) {
+                return false;
+            }
+
+            return DB::table('mitra_members as mm')
+                ->join('mitras as m', 'm.id', '=', 'mm.mitra_id')
+                ->where('mm.user_id', $userId)
+                ->where('mm.member_role', 'admin_klinik')
+                ->where('mm.is_active', true)
+                ->where('m.status', 'approved')
+                ->where('m.mitra_type', 'PAW_HEALTH')
+                ->exists();
+        } catch (\Throwable $e) {
+            report($e);
+
+            return false;
+        }
     }
 }
