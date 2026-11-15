@@ -31,11 +31,11 @@ if (!defined('UUID_PATTERN')) {
 Route::get('/', fn() => view('index'))->name('home');
 
 // KALKULATOR BERAT BADAN (cek status obesitas)
-Route::get('/kalkulator-bb', [KalkulatorBbController::class, 'index'])
-    ->name('kalkulator_bb.index');
-Route::post('/kalkulator-bb', [KalkulatorBbController::class, 'hitung'])
+Route::get('/kalkulator', [KalkulatorBbController::class, 'index'])
+    ->name('kalkulator.index');
+Route::post('/kalkulator', [KalkulatorBbController::class, 'hitung'])
     ->middleware('throttle:30,1')
-    ->name('kalkulator_bb.hitung');
+    ->name('kalkulator.hitung');
 
 // Cari Petshop (publik). Hanya Mitra berstatus approved; jam operasional & ulasan khusus user login (dijaga di controller).
 Route::get('/petshops', [PetshopController::class, 'index'])->name('petshops.index');

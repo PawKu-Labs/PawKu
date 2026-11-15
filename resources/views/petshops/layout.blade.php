@@ -442,6 +442,26 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .icon-svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            flex-shrink: 0;
+        }
+
+        .btn-primary,
+        .btn-outline,
+        .btn-white {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
     </style>
     @stack('styles')
 </head>
@@ -460,24 +480,29 @@
     <header class="navbar">
         <div class="nav-container">
             <a href="{{ url('/') }}" class="logo">
-                <img src="{{ asset('assets/icon/pawku-nobg.png') }}" alt="logo-pawku" style="width: 70px;">
+                <img src="{{ asset('assets/icon/pawku-nobg.png') }}" alt="logo-pawku" style="width: 68px;">
             </a>
 
             <nav class="nav-menu">
                 <a href="{{ url('/') }}">Home</a>
                 <a href="{{ url('/') }}#features">Features</a>
                 <a href="{{ url('/') }}#tips">Pet Care</a>
-                <a href="{{ route('petshops.index') }}" class="active">Petshop</a>
+                <a href="{{ route('kalkulator.index') }}"
+                    class="{{ request()->routeIs('kalkulator.*') ? 'active' : '' }}">Cek Status Berat Badan</a>
+                <a href="{{ route('petshops.index') }}"
+                    class="{{ request()->routeIs('petshops.*') ? 'active' : '' }}">Petshop</a>
                 <a href="{{ url('/') }}#about">About</a>
             </nav>
 
+            <!-- ACTION -->
             <div class="nav-actions">
-                @if ($psLoggedIn)
-                    <a href="{{ $psDashboard }}" class="btn-primary">Dashboard</a>
-                @else
-                    <a href="{{ route('login') }}" class="login-link">Login</a>
-                    <a href="{{ route('register') }}" class="btn-primary">Get Started</a>
-                @endif
+                <a href="/login" class="btn-primary">
+                    <span>Sign In</span>
+                    <svg class="icon-svg" style="width: 16px; height: 16px;" viewBox="0 0 24 24">
+                        <path d="M5 12h14"></path>
+                        <path d="m12 5 7 7-7 7"></path>
+                    </svg>
+                </a>
             </div>
         </div>
     </header>

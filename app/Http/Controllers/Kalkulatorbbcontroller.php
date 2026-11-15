@@ -16,17 +16,17 @@ class KalkulatorBbController extends Controller
      */
     private const STANDAR_RAS = [
         'Domestik / Kampung' => ['min' => 3.0, 'max' => 5.0],
-        'Persia'             => ['min' => 3.5, 'max' => 5.5],
-        'Anggora'            => ['min' => 3.0, 'max' => 5.0],
-        'Russian Blue'       => ['min' => 3.0, 'max' => 5.5],
-        'Bengal'             => ['min' => 3.5, 'max' => 6.5],
-        'Maine Coon'         => ['min' => 5.0, 'max' => 8.0],
-        'British Shorthair'  => ['min' => 4.0, 'max' => 7.0],
-        'Siamese'            => ['min' => 3.0, 'max' => 5.0],
-        'Ragdoll'            => ['min' => 4.5, 'max' => 7.5],
-        'Scottish Fold'      => ['min' => 3.0, 'max' => 5.5],
-        'Sphynx'             => ['min' => 3.5, 'max' => 5.5],
-        'Arabian'            => ['min' => 3.0, 'max' => 5.0],
+        'Persia' => ['min' => 3.5, 'max' => 5.5],
+        'Anggora' => ['min' => 3.0, 'max' => 5.0],
+        'Russian Blue' => ['min' => 3.0, 'max' => 5.5],
+        'Bengal' => ['min' => 3.5, 'max' => 6.5],
+        'Maine Coon' => ['min' => 5.0, 'max' => 8.0],
+        'British Shorthair' => ['min' => 4.0, 'max' => 7.0],
+        'Siamese' => ['min' => 3.0, 'max' => 5.0],
+        'Ragdoll' => ['min' => 4.5, 'max' => 7.5],
+        'Scottish Fold' => ['min' => 3.0, 'max' => 5.5],
+        'Sphynx' => ['min' => 3.5, 'max' => 5.5],
+        'Arabian' => ['min' => 3.0, 'max' => 5.0],
     ];
 
     private const BATAS_DEWASA_BULAN = 12;
@@ -60,33 +60,33 @@ class KalkulatorBbController extends Controller
 
     public function index()
     {
-        return view('kalkulator_bb', [
+        return view('kalkulator', [
             'daftarRas' => array_keys(self::STANDAR_RAS),
-            'hasil'     => null,
+            'hasil' => null,
         ]);
     }
 
     public function hitung(Request $request)
     {
         $data = $request->validate([
-            'ras'    => ['required', Rule::in(array_keys(self::STANDAR_RAS))],
-            'umur'   => ['required', 'numeric', 'min:0', 'max:300'],
+            'ras' => ['required', Rule::in(array_keys(self::STANDAR_RAS))],
+            'umur' => ['required', 'numeric', 'min:0', 'max:300'],
             'satuan' => ['required', Rule::in(['bulan', 'tahun'])],
-            'bb'     => ['required', 'numeric', 'min:0.1', 'max:20'],
+            'bb' => ['required', 'numeric', 'min:0.1', 'max:20'],
         ], [
-            'ras.required'  => 'Pilih ras kucing.',
+            'ras.required' => 'Pilih ras kucing.',
             'umur.required' => 'Umur wajib diisi.',
-            'umur.numeric'  => 'Umur harus berupa angka.',
-            'bb.required'   => 'Berat badan wajib diisi.',
-            'bb.numeric'    => 'Berat badan harus berupa angka.',
-            'bb.min'        => 'Berat badan harus lebih dari 0 kg.',
+            'umur.numeric' => 'Umur harus berupa angka.',
+            'bb.required' => 'Berat badan wajib diisi.',
+            'bb.numeric' => 'Berat badan harus berupa angka.',
+            'bb.min' => 'Berat badan harus lebih dari 0 kg.',
         ]);
 
         $umurBulan = $data['satuan'] === 'tahun' ? $data['umur'] * 12 : $data['umur'];
 
-        return view('kalkulator_bb', [
+        return view('kalkulator', [
             'daftarRas' => array_keys(self::STANDAR_RAS),
-            'hasil'     => $this->klasifikasi($umurBulan, (float) $data['bb'], $data['ras']),
+            'hasil' => $this->klasifikasi($umurBulan, (float) $data['bb'], $data['ras']),
         ]);
     }
 
@@ -95,9 +95,9 @@ class KalkulatorBbController extends Controller
      */
     private function klasifikasi(float $umurBulan, float $bb, string $ras): array
     {
-        $std   = self::STANDAR_RAS[$ras];
-        $min   = $std['min'];
-        $max   = $std['max'];
+        $std = self::STANDAR_RAS[$ras];
+        $min = $std['min'];
+        $max = $std['max'];
         $trace = ["umur = {$umurBulan} bulan, berat = {$bb} kg, ras = {$ras}"];
 
         // Cabang 1: anak kucing
@@ -121,15 +121,15 @@ class KalkulatorBbController extends Controller
         }
 
         return [
-            'ras'     => $ras,
-            'bb'      => $bb,
-            'status'  => $status,
-            'label'   => ['kurus' => 'Kurus', 'normal' => 'Normal', 'gemuk' => 'Gemuk', 'unknown' => 'Belum diketahui'][$status],
-            'min'     => $min,
-            'max'     => $max,
-            'posisi'  => $status === 'unknown' ? null : $this->posisiMarker($bb, $min, $max),
-            'saran'   => self::SARAN[$status],
-            'trace'   => $trace,
+            'ras' => $ras,
+            'bb' => $bb,
+            'status' => $status,
+            'label' => ['kurus' => 'Kurus', 'normal' => 'Normal', 'gemuk' => 'Gemuk', 'unknown' => 'Belum diketahui'][$status],
+            'min' => $min,
+            'max' => $max,
+            'posisi' => $status === 'unknown' ? null : $this->posisiMarker($bb, $min, $max),
+            'saran' => self::SARAN[$status],
+            'trace' => $trace,
         ];
     }
 
@@ -140,7 +140,7 @@ class KalkulatorBbController extends Controller
     {
         $lebar = $max - $min;
         $bawah = $min - $lebar * 0.75;
-        $atas  = $max + $lebar * 0.75;
+        $atas = $max + $lebar * 0.75;
 
         if ($bb < $min) {
             return 30 * max(0, ($bb - $bawah) / ($min - $bawah));
