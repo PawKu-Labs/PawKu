@@ -7,7 +7,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
-class KalkulatorBbController extends Controller
+class KalkulatorbbController extends Controller
 {
     /**
      * Basis pengetahuan: rentang berat ideal kucing dewasa per ras (kg).
