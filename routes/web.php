@@ -31,9 +31,9 @@ if (!defined('UUID_PATTERN')) {
 Route::get('/', fn() => view('index'))->name('home');
 
 // KALKULATOR BERAT BADAN (cek status obesitas)
-Route::get('/kalkulator', [KalkulatorBbController::class, 'index'])
+Route::get('/kalkulator', [KalkulatorbbController::class, 'index'])
     ->name('kalkulator.index');
-Route::post('/kalkulator', [KalkulatorBbController::class, 'hitung'])
+Route::post('/kalkulator', [KalkulatorbbController::class, 'hitung'])
     ->middleware('throttle:30,1')
     ->name('kalkulator.hitung');
 
