@@ -13,7 +13,7 @@ use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\OwnerMitraController;
 use App\Http\Controllers\PetshopController;
 use App\Http\Controllers\SuperAdminController;
-use App\Http\Controllers\KalkulatorBbController;
+use App\Http\Controllers\KalkulatorbbController;
 
 use Illuminate\Support\Facades\Route;
 
