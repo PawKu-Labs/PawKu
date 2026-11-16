@@ -111,30 +111,6 @@
     @endif
 
     <section>
-        <div class="group-title">Ringkasan</div>
-        <div class="grid g3">
-            <div class="card stat">
-                <div class="stat-top"><span class="stat-label">Aktif</span>
-                    <div class="stat-icon i-green">✅</div>
-                </div>
-                <div class="stat-value">{{ $counts['approved'] }}</div>
-            </div>
-            <div class="card stat">
-                <div class="stat-top"><span class="stat-label">Menunggu</span>
-                    <div class="stat-icon i-gold">⏳</div>
-                </div>
-                <div class="stat-value">{{ $counts['pending'] }}</div>
-            </div>
-            <div class="card stat">
-                <div class="stat-top"><span class="stat-label">Ditolak</span>
-                    <div class="stat-icon i-red">❌</div>
-                </div>
-                <div class="stat-value">{{ $counts['rejected'] }}</div>
-            </div>
-        </div>
-    </section>
-
-    <section>
         <div class="group-title">Daftar Usaha ({{ $mitras->count() }})</div>
         @if ($mitras->isEmpty() && !$loadError)
             <div class="card" style="text-align:center;padding:40px 20px;">
@@ -147,10 +123,13 @@
                     @php
                         $mi = \App\Support\MitraType::info($m->mitra_type);
                         $img = $m->logo_url ?: $m->photo_url;
-                        $st = [
-                            'approved' => ['Aktif', 'p-approved'],
-                            'rejected' => ['Ditolak', 'p-rejected'],
-                        ][$m->status] ?? ['Menunggu persetujuan', 'p-pending'];
+
+                        // Usaha yang sudah disetujui tidak diberi label status. Label hanya untuk yang belum disetujui.
+                        $st = $m->status === 'approved'
+                            ? null
+                            : ([
+                                'rejected' => ['Ditolak', 'p-rejected'],
+                            ][$m->status] ?? ['Menunggu persetujuan', 'p-pending']);
 
                         $href = \App\Support\MitraUrl::for($m) ?? '#';
                     @endphp
@@ -168,7 +147,9 @@
                             <div class="m-name">{{ $m->name }}</div>
                             <div class="m-chips">
                                 <span class="pill" style="background:var(--bg);color:var(--body);">{{ $mi['label'] }}</span>
-                                <span class="pill {{ $st[1] }}">{{ $st[0] }}</span>
+                                @if ($st)
+                                    <span class="pill {{ $st[1] }}">{{ $st[0] }}</span>
+                                @endif
                             </div>
                             @if (!empty($m->address))
                                 <div class="m-addr">📍 {{ $m->address }}</div>

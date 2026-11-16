@@ -41,9 +41,21 @@ class MitraDashboardController extends Controller
     /** Alur status yang diizinkan: dari => [tujuan...] */
     private const TRANSITIONS = [
         'menunggu' => ['dikonfirmasi', 'ditolak'],
-        'dikonfirmasi' => ['dilayani', 'selesai'],
+        'dikonfirmasi' => ['dilayani', 'ditolak'],
         'dilayani' => ['selesai'],
     ];
+
+    /** Periode filter pendapatan: kunci => [label, jumlah hari termasuk hari ini]. */
+    private const PERIODS = [
+        'hari_ini' => ['Hari ini', 1],
+        '7_hari' => ['7 hari terakhir', 7],
+        '1_bulan' => ['1 bulan terakhir', 30],
+        '3_bulan' => ['3 bulan terakhir', 90],
+        '6_bulan' => ['6 bulan terakhir', 180],
+        '1_tahun' => ['1 tahun terakhir', 365],
+    ];
+
+    private const DEFAULT_PERIOD = '1_bulan';
 
     private const T_BOOKINGS = 'bookings';
 
@@ -96,7 +108,9 @@ class MitraDashboardController extends Controller
                     'services_count' => 0,
                     'total_reviews' => 0,
                     'avg_rating' => null,
+                    'revenue' => ['total' => 0, 'count' => 0, 'label' => '', 'key' => self::DEFAULT_PERIOD],
                 ],
+                'periods' => array_map(fn ($p) => $p[0], self::PERIODS),
             ]);
         }
 
@@ -142,6 +156,14 @@ class MitraDashboardController extends Controller
 
         $stats = $this->buildStats($bookings, $services, $activeMitra->id);
 
+        // Pendapatan: hanya booking berstatus selesai, harga saat booking dibuat, periode dipilih owner.
+        $periodKey = (string) $request->query('periode', self::DEFAULT_PERIOD);
+        if (! array_key_exists($periodKey, self::PERIODS)) {
+            $periodKey = self::DEFAULT_PERIOD;
+        }
+        $stats['revenue'] = $this->buildRevenue($activeMitra->id, $periodKey);
+        $periods = array_map(fn ($p) => $p[0], self::PERIODS);
+
         return view('owner.mitra.dashboard', compact(
             'userMitras',
             'activeMitra',
@@ -151,7 +173,8 @@ class MitraDashboardController extends Controller
             'services',
             'members',
             'operatingHours',
-            'stats'
+            'stats',
+            'periods'
         ));
     }
 
@@ -174,6 +197,11 @@ class MitraDashboardController extends Controller
             ? redirect()->route('owner.mitra.dashboard.unit', ['mitra' => strtolower($mitra), 'tab' => 'booking'])
             : redirect()->route('owner.mitra.dashboard', ['mitra' => strtolower($mitra), 'tab' => 'booking']);
 
+        // Booking klinik diproses admin klinik (terima, pilih dokter, layani). Owner hanya memantau.
+        if (strtoupper($activeMitra->mitra_type ?? '') === 'PAW_HEALTH') {
+            return $back->with('error', 'Booking klinik diproses oleh admin klinik. Owner hanya memantau.');
+        }
+
         $row = $this->safe(fn () => $this->findBooking($booking, $activeMitra->id), null);
         abort_if(! $row, 404);
 
@@ -188,11 +216,19 @@ class MitraDashboardController extends Controller
         }
 
         try {
+            // Transaksi + identitas owner: trigger database mencatat siapa yang menerima booking.
             // Syarat status lama mencegah dua klik/dua perangkat saling menimpa.
-            $affected = DB::table(self::T_BOOKINGS)
-                ->where('id', $row->id)
-                ->where('status', $row->status)
-                ->update($payload);
+            $affected = DB::transaction(function () use ($userId, $row, $payload) {
+                DB::select(
+                    "select set_config('request.jwt.claim.sub', ?, true), set_config('request.jwt.claims', ?, true)",
+                    [(string) $userId, json_encode(['sub' => (string) $userId, 'role' => 'authenticated'])]
+                );
+
+                return DB::table(self::T_BOOKINGS)
+                    ->where('id', $row->id)
+                    ->where('status', $row->status)
+                    ->update($payload);
+            });
         } catch (\Throwable $e) {
             report($e);
 
@@ -619,7 +655,9 @@ class MitraDashboardController extends Controller
         $q = DB::table($b)
             ->leftJoin($s, "$s.id", '=', "$b.service_id")
             ->leftJoin($c, "$c.id", '=', "$b.cat_id")
-            ->leftJoin($p, "$p.id", '=', "$b.$userCol");
+            ->leftJoin($p, "$p.id", '=', "$b.$userCol")
+            ->leftJoin("$p as dr", 'dr.id', '=', "$b.assigned_doctor_id")
+            ->leftJoin("$p as adm", 'adm.id', '=', "$b.confirmed_by");
 
         if ($hasSlots) {
             $q->leftJoin($sl, "$sl.id", '=', "$b.slot_id");
@@ -635,7 +673,14 @@ class MitraDashboardController extends Controller
             "$c.name as cat_name",
             "$p.full_name as customer_name",
             "$p.username as customer_username",
-            $this->pick($s, 'price', 'service_price'),
+            // Harga saat booking dibuat (bukan harga layanan sekarang); total hotel = harga x malam.
+            DB::raw("COALESCE($b.service_price, $s.price) as service_price"),
+            DB::raw($this->nightsSql($b).' as nights'),
+            DB::raw("COALESCE($b.service_price, $s.price, 0) * (".$this->nightsSql($b).') as total_price'),
+            "dr.full_name as doctor_name",
+            "dr.username as doctor_username",
+            "adm.full_name as confirmed_by_name",
+            "adm.username as confirmed_by_username",
             $this->pick($c, 'breed', 'cat_breed'),
             $this->pick($p, 'phone_number', 'customer_phone'),
             $hasSlotDateOnBookings
@@ -712,6 +757,44 @@ class MitraDashboardController extends Controller
             'avg_rating' => ($totalReviews > 0 && $review->avg_rating !== null)
                 ? number_format((float) $review->avg_rating, 1)
                 : null,
+        ];
+    }
+
+    /** Jumlah malam menginap (hotel); booking jadwal biasa = 1. Dipakai untuk total harga & pendapatan. */
+    private function nightsSql(string $b): string
+    {
+        if (! Schema::hasColumn($b, 'slot_id')) {
+            return '1';
+        }
+
+        return "CASE WHEN $b.slot_id IS NULL AND $b.check_in_at IS NOT NULL AND $b.check_out_at IS NOT NULL "
+            ."THEN GREATEST(1, ($b.check_out_at AT TIME ZONE 'Asia/Jakarta')::date - ($b.check_in_at AT TIME ZONE 'Asia/Jakarta')::date) "
+            .'ELSE 1 END';
+    }
+
+    /** Total pendapatan booking SELESAI pada periode (berdasarkan tanggal selesai, WIB). */
+    private function buildRevenue(string $mitraId, string $periodKey): array
+    {
+        [$label, $days] = self::PERIODS[$periodKey];
+        $today = Carbon::now(self::TZ)->toDateString();
+        $start = Carbon::now(self::TZ)->subDays($days - 1)->toDateString();
+
+        $b = self::T_BOOKINGS;
+        $s = self::T_SERVICES;
+
+        $row = $this->safe(fn () => DB::table($b)
+            ->leftJoin($s, "$s.id", '=', "$b.service_id")
+            ->where("$b.mitra_id", $mitraId)
+            ->where("$b.status", 'selesai')
+            ->whereRaw("(COALESCE($b.completed_at, $b.created_at) AT TIME ZONE 'Asia/Jakarta')::date BETWEEN ?::date AND ?::date", [$start, $today])
+            ->selectRaw("count(*) as total, COALESCE(sum(COALESCE($b.service_price, $s.price, 0) * (".$this->nightsSql($b).')), 0) as revenue')
+            ->first(), null);
+
+        return [
+            'key' => $periodKey,
+            'label' => $label,
+            'count' => (int) ($row->total ?? 0),
+            'total' => (float) ($row->revenue ?? 0),
         ];
     }
 

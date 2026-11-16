@@ -38,6 +38,7 @@
     .type-paw-shop { background: #dcfce7; color: #15803d; }
 
     .pill.p-serving { background: #dbeafe; color: #1d4ed8; }
+    .pill.p-expired { background: #f1f5f9; color: #64748b; }
 
     .flash {
         padding: 12px 16px; border-radius: var(--r); font-size: 13.5px; font-weight: 600; margin-top: 14px;
@@ -113,6 +114,8 @@
         letter-spacing: 0.5px; margin-bottom: 3px;
     }
     .booking-meta-val { font-size: 13.5px; font-weight: 600; color: var(--heading); }
+    .booking-meta-sub { font-size: 12px; color: var(--muted); margin-top: 2px; font-weight: 400; }
+    .booking-meta-none { font-size: 13.5px; color: var(--muted); font-weight: 500; }
 
     .booking-actions {
         display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -137,8 +140,16 @@
     .filter-btn {
         padding: 6px 14px; font-size: 12.5px; font-weight: 600; border-radius: 20px;
         border: 1px solid var(--border); background: #fff; color: var(--body); cursor: pointer; transition: .2s;
+        text-decoration: none; display: inline-block;
     }
     .filter-btn.active { background: var(--heading); color: #fff; border-color: var(--heading); }
+
+    /* Pendapatan */
+    .rev-card { display: flex; flex-direction: column; gap: 4px; border-left: 4px solid #2E9E6B; }
+    .rev-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .rev-value { font-size: 34px; font-weight: 800; color: var(--heading); margin-top: 10px; line-height: 1.1; }
+    .rev-sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
+    .rev-note { font-size: 11.5px; color: var(--muted); margin-top: 10px; line-height: 1.4; }
 
     .modal-overlay {
         position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(4px);
@@ -197,9 +208,11 @@
         'selesai' => ['Selesai', 'p-approved'],
         'ditolak' => ['Ditolak', 'p-rejected'],
         'dibatalkan' => ['Dibatalkan', 'p-rejected'],
+        'kedaluwarsa' => ['Kedaluwarsa', 'p-expired'],
     ];
 
     // [status tujuan, class tombol, label, teks konfirmasi]
+    // Sama dengan aturan database: dikonfirmasi harus lewat "dilayani" dulu sebelum selesai.
     $actionMap = [
         'menunggu' => [
             ['dikonfirmasi', 'btn-confirm', '✓ Konfirmasi', null],
@@ -207,7 +220,7 @@
         ],
         'dikonfirmasi' => [
             ['dilayani', 'btn-serve', '🐾 Mulai Layani', null],
-            ['selesai', 'btn-finish', '✓ Selesaikan', null],
+            ['ditolak', 'btn-reject', '✕ Tolak', 'Tolak booking ini?'],
         ],
         'dilayani' => [
             ['selesai', 'btn-finish', '✓ Selesaikan Layanan', null],
@@ -226,6 +239,22 @@
 
         return $d;
     };
+
+    $rupiah = fn($n) => 'Rp ' . number_format((float) $n, 0, ',', '.');
+
+    // Nama tampil: nama lengkap, bila kosong pakai username, bila kosong null
+    $personName = function (?string $name, ?string $username): ?string {
+        $n = trim((string) $name);
+        if ($n !== '') {
+            return $n;
+        }
+        $u = trim((string) $username);
+
+        return $u !== '' ? $u : null;
+    };
+
+    // "Diterima oleh" hanya relevan setelah booking diterima
+    $acceptedStatuses = ['dikonfirmasi', 'dilayani', 'selesai'];
 
     $tabs = ['beranda', 'booking', 'layanan', 'member', 'profil'];
 
@@ -327,9 +356,38 @@
 
 {{-- TAB 1: BERANDA --}}
 <div id="panel-beranda" class="tab-panel {{ $currentTab === 'beranda' ? 'active' : '' }}">
+    {{-- Pendapatan + filter periode --}}
+    <section>
+        <div class="group-title">Pendapatan</div>
+        <div class="card rev-card">
+            <div class="rev-head">
+                <div>
+                    <div class="stat-label">Total Pendapatan · {{ $stats['revenue']['label'] }}</div>
+                    <div class="rev-value">{{ $rupiah($stats['revenue']['total']) }}</div>
+                    <div class="rev-sub">dari {{ number_format($stats['revenue']['count']) }} booking selesai</div>
+                </div>
+                <div class="stat-icon i-green">💰</div>
+            </div>
+
+            <div class="filter-group" style="margin: 14px 0 0;">
+                @foreach ($periods as $pKey => $pLabel)
+                    <a href="{{ route('owner.mitra.dashboard.unit', ['mitra' => $mitraId, 'tab' => 'beranda', 'periode' => $pKey]) }}"
+                        class="filter-btn {{ $stats['revenue']['key'] === $pKey ? 'active' : '' }}">{{ $pLabel }}</a>
+                @endforeach
+            </div>
+
+            <div class="rev-note">
+                Hanya booking berstatus selesai, dihitung dari harga saat booking dibuat dan tanggal booking selesai.
+                @if (strtoupper($activeMitra->mitra_type ?? '') === 'PAW_HOTEL')
+                    Hotel dihitung harga per malam × jumlah malam.
+                @endif
+            </div>
+        </div>
+    </section>
+
     <section>
         <div class="group-title">Ringkasan Operasional</div>
-        <div class="grid g3">
+        <div class="grid g4">
             <div class="card stat">
                 <div class="stat-top"><span class="stat-label">Total Booking Masuk</span><div class="stat-icon i-blue">📅</div></div>
                 <div class="stat-value">{{ number_format($stats['total_bookings']) }}</div>
@@ -339,16 +397,8 @@
                 <div class="stat-value">{{ number_format($stats['today_bookings']) }}</div>
             </div>
             <div class="card stat">
-                <div class="stat-top"><span class="stat-label">Perlu Konfirmasi Segera</span><div class="stat-icon i-red">⏳</div></div>
-                <div class="stat-value">{{ number_format($stats['pending_bookings']) }}</div>
-            </div>
-            <div class="card stat">
                 <div class="stat-top"><span class="stat-label">Katalog Layanan Aktif</span><div class="stat-icon i-green">🛁</div></div>
                 <div class="stat-value">{{ number_format($stats['services_count']) }}</div>
-            </div>
-            <div class="card stat">
-                <div class="stat-top"><span class="stat-label">Sedang Dilayani</span><div class="stat-icon i-purple">🐾</div></div>
-                <div class="stat-value">{{ number_format($stats['serving_bookings']) }}</div>
             </div>
             <div class="card stat">
                 <div class="stat-top"><span class="stat-label">Rating &amp; Ulasan</span><div class="stat-icon i-gold">⭐</div></div>
@@ -416,7 +466,11 @@
         @else
             <div style="display: flex; flex-direction: column; gap: 12px;">
                 @foreach ($bookings->take(3) as $bk)
-                    @php [$bsLabel, $bsClass] = $bStatusMap[$bk->status] ?? ['Menunggu', 'p-pending']; @endphp
+                    @php
+                        [$bsLabel, $bsClass] = $bStatusMap[$bk->status] ?? [ucfirst((string) $bk->status), 'p-expired'];
+                        $doctorName = $personName($bk->doctor_name ?? null, $bk->doctor_username ?? null);
+                        $acceptedBy = $personName($bk->confirmed_by_name ?? null, $bk->confirmed_by_username ?? null);
+                    @endphp
                     <div class="booking-card">
                         <div class="booking-header">
                             <div style="display: flex; align-items: center; gap: 10px;">
@@ -445,9 +499,35 @@
                             <div>
                                 <div class="booking-meta-label">Total Biaya</div>
                                 <div class="booking-meta-val" style="color: var(--primary);">
-                                    Rp {{ number_format((float) ($bk->service_price ?? 0), 0, ',', '.') }}
+                                    {{ $rupiah($bk->total_price ?? 0) }}
                                 </div>
+                                @if ((int) ($bk->nights ?? 1) > 1)
+                                    <div class="booking-meta-sub">{{ (int) $bk->nights }} malam × {{ $rupiah($bk->service_price ?? 0) }}</div>
+                                @endif
                             </div>
+                            @if ($isHealthMitra)
+                                <div>
+                                    <div class="booking-meta-label">Dokter</div>
+                                    @if ($doctorName)
+                                        <div class="booking-meta-val">🩺 {{ $doctorName }}</div>
+                                    @else
+                                        <div class="booking-meta-none">Belum dipilih</div>
+                                    @endif
+                                </div>
+                            @endif
+                            @if (in_array($bk->status, $acceptedStatuses, true))
+                                <div>
+                                    <div class="booking-meta-label">Diterima oleh</div>
+                                    @if ($acceptedBy)
+                                        <div class="booking-meta-val">{{ $acceptedBy }}</div>
+                                        @if (!empty($bk->confirmed_at))
+                                            <div class="booking-meta-sub">{{ \Carbon\Carbon::parse($bk->confirmed_at)->timezone('Asia/Jakarta')->format('d M Y H:i') }}</div>
+                                        @endif
+                                    @else
+                                        <div class="booking-meta-none">-</div>
+                                    @endif
+                                </div>
+                            @endif
                         </div>
                     </div>
                 @endforeach
@@ -461,7 +541,13 @@
     <section>
         <div style="margin-bottom: 14px;">
             <h2 style="font-size: 18px; font-weight: 700; color: var(--heading);">Kelola Reservasi &amp; Antrean Booking</h2>
-            <p style="font-size: 13px; color: var(--muted);">Daftar seluruh pesanan dan antrean masuk dari pemilik kucing.</p>
+            <p style="font-size: 13px; color: var(--muted);">
+                @if ($isHealthMitra)
+                    Daftar seluruh pesanan klinik. Booking diproses oleh admin klinik, Anda memantau di sini.
+                @else
+                    Daftar seluruh pesanan dan antrean masuk dari pemilik kucing.
+                @endif
+            </p>
         </div>
 
         <div class="filter-group">
@@ -471,6 +557,7 @@
             <button type="button" class="filter-btn" onclick="filterBookings('dilayani', this)">Sedang Dilayani ({{ $bookings->where('status', 'dilayani')->count() }})</button>
             <button type="button" class="filter-btn" onclick="filterBookings('selesai', this)">Selesai ({{ $bookings->where('status', 'selesai')->count() }})</button>
             <button type="button" class="filter-btn" onclick="filterBookings('batal_tolak', this)">Ditolak / Batal ({{ $bookings->whereIn('status', ['ditolak', 'dibatalkan'])->count() }})</button>
+            <button type="button" class="filter-btn" onclick="filterBookings('kedaluwarsa', this)">Kedaluwarsa ({{ $bookings->where('status', 'kedaluwarsa')->count() }})</button>
         </div>
 
         @if ($bookings->isEmpty())
@@ -483,8 +570,10 @@
             <div id="booking-items-container" style="display: flex; flex-direction: column; gap: 14px;">
                 @foreach ($bookings as $bk)
                     @php
-                        [$bsLabel, $bsClass] = $bStatusMap[$bk->status] ?? ['Menunggu', 'p-pending'];
+                        [$bsLabel, $bsClass] = $bStatusMap[$bk->status] ?? [ucfirst((string) $bk->status), 'p-expired'];
                         $wa = $waNumber($bk->customer_phone ?? null);
+                        $doctorName = $personName($bk->doctor_name ?? null, $bk->doctor_username ?? null);
+                        $acceptedBy = $personName($bk->confirmed_by_name ?? null, $bk->confirmed_by_username ?? null);
                     @endphp
                     <div class="booking-card booking-item-row" data-status="{{ $bk->status }}">
                         <div class="booking-header">
@@ -513,8 +602,11 @@
                                 <div class="booking-meta-label">Layanan Dipesan</div>
                                 <div class="booking-meta-val">{{ $bk->service_name ?? 'Layanan' }}</div>
                                 <div style="font-size: 12px; color: var(--primary); font-weight: 700; margin-top: 2px;">
-                                    Rp {{ number_format((float) ($bk->service_price ?? 0), 0, ',', '.') }}
+                                    {{ $rupiah($bk->total_price ?? 0) }}
                                 </div>
+                                @if ((int) ($bk->nights ?? 1) > 1)
+                                    <div class="booking-meta-sub">{{ (int) $bk->nights }} malam × {{ $rupiah($bk->service_price ?? 0) }}</div>
+                                @endif
                             </div>
                             <div>
                                 <div class="booking-meta-label">Waktu Booking / Slot</div>
@@ -529,6 +621,29 @@
                                     </div>
                                 @endif
                             </div>
+                            @if ($isHealthMitra)
+                                <div>
+                                    <div class="booking-meta-label">Dokter yang Melayani</div>
+                                    @if ($doctorName)
+                                        <div class="booking-meta-val">🩺 {{ $doctorName }}</div>
+                                    @else
+                                        <div class="booking-meta-none">Belum dipilih</div>
+                                    @endif
+                                </div>
+                            @endif
+                            @if (in_array($bk->status, $acceptedStatuses, true))
+                                <div>
+                                    <div class="booking-meta-label">Diterima oleh</div>
+                                    @if ($acceptedBy)
+                                        <div class="booking-meta-val">{{ $acceptedBy }}</div>
+                                        @if (!empty($bk->confirmed_at))
+                                            <div class="booking-meta-sub">{{ \Carbon\Carbon::parse($bk->confirmed_at)->timezone('Asia/Jakarta')->format('d M Y H:i') }}</div>
+                                        @endif
+                                    @else
+                                        <div class="booking-meta-none">-</div>
+                                    @endif
+                                </div>
+                            @endif
                             @if (!empty($bk->notes))
                                 <div style="grid-column: 1 / -1;">
                                     <div class="booking-meta-label">Catatan Pelanggan</div>
@@ -540,7 +655,9 @@
                         </div>
 
                         <div class="booking-actions">
-                            @if (isset($actionMap[$bk->status]))
+                            @if ($isHealthMitra)
+                                <span style="font-size: 12px; color: var(--muted); font-style: italic;">Booking klinik diproses oleh admin klinik. Anda memantau di sini.</span>
+                            @elseif (isset($actionMap[$bk->status]))
                                 <span style="font-size: 12px; color: var(--muted); font-weight: 600; margin-right: 4px;">Ubah Status:</span>
                                 @foreach ($actionMap[$bk->status] as [$toStatus, $btnClass, $btnLabel, $confirmText])
                                     <form action="{{ route('owner.mitra.booking.status', ['mitra' => $mitraId, 'booking' => $bk->id]) }}" method="POST" style="display:inline;">
