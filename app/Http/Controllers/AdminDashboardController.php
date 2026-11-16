@@ -15,6 +15,8 @@ class AdminDashboardController extends Controller
 {
     private const CATEGORIES = ['all', 'auth', 'user', 'data', 'transaction', 'admin'];
 
+    private const DOCTOR_STATUSES = ['pending', 'verified', 'rejected'];
+
     /**
      * Dashboard monitoring untuk admin.
      */
@@ -216,6 +218,133 @@ class AdminDashboardController extends Controller
         );
 
         return back()->with('success', "Petshop berhasil {$label}.");
+    }
+
+    /**
+     * Daftar dokter hewan klinik untuk diverifikasi admin PawKu (status: pending, verified, rejected).
+     * Dokter baru berstatus pending sampai STR/SIP-nya diperiksa di sini.
+     */
+    public function doctors(Request $request): View
+    {
+        $status = $request->query('status', 'pending');
+        abort_unless(in_array($status, self::DOCTOR_STATUSES, true), 404);
+
+        $counts = DB::table('mitra_members')
+            ->where('member_role', 'dokter')
+            ->selectRaw('verification_status, count(*) as total')
+            ->groupBy('verification_status')
+            ->pluck('total', 'verification_status');
+
+        $query = DB::table('mitra_members as mm')
+            ->join('profiles as p', 'p.id', '=', 'mm.user_id')
+            ->join('mitras as m', 'm.id', '=', 'mm.mitra_id')
+            ->leftJoin('profiles as vb', 'vb.id', '=', 'mm.verified_by');
+
+        if (DB::getDriverName() === 'pgsql') {
+            $query->leftJoin('auth.users as u', 'u.id', '=', 'mm.user_id')
+                ->select('u.email as email');
+        } else {
+            $query->selectRaw('null as email');
+        }
+
+        $doctors = $query
+            ->addSelect(
+                'mm.id',
+                'mm.str_number',
+                'mm.sip_number',
+                'mm.specialization',
+                'mm.verification_status',
+                'mm.rejection_reason',
+                'mm.verified_at',
+                'mm.is_active',
+                'mm.created_at',
+                'p.full_name',
+                'p.username',
+                'p.phone_number',
+                'p.avatar_url',
+                'm.name as mitra_name',
+                'm.status as mitra_status'
+            )
+            ->selectRaw('coalesce(vb.full_name, vb.username) as verified_by_name')
+            ->where('mm.member_role', 'dokter')
+            ->where('mm.verification_status', $status)
+            ->orderByDesc('mm.created_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.dokter', compact('doctors', 'status', 'counts'));
+    }
+
+    /**
+     * Verifikasi, tolak, atau kembalikan ke menunggu untuk satu dokter hewan.
+     * Database mewajibkan STR dan SIP terisi sebelum dokter boleh berstatus verified.
+     */
+    public function updateDoctorStatus(Request $request, string $member): RedirectResponse
+    {
+        $data = $request->validate([
+            'status' => ['required', Rule::in(self::DOCTOR_STATUSES)],
+            'rejection_reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $row = DB::table('mitra_members as mm')
+            ->join('profiles as p', 'p.id', '=', 'mm.user_id')
+            ->join('mitras as m', 'm.id', '=', 'mm.mitra_id')
+            ->where('mm.id', strtolower($member))
+            ->where('mm.member_role', 'dokter')
+            ->select('mm.id', 'mm.str_number', 'mm.sip_number', 'mm.verification_status', 'mm.rejection_reason',
+                'p.full_name', 'p.username', 'm.name as mitra_name')
+            ->first();
+        abort_if(!$row, 404);
+
+        $verified = $data['status'] === 'verified';
+        $rejected = $data['status'] === 'rejected';
+
+        if ($verified && (trim((string) $row->str_number) === '' || trim((string) $row->sip_number) === '')) {
+            return back()->with('error', 'Dokter belum melengkapi nomor STR dan SIP, jadi belum bisa diverifikasi.');
+        }
+
+        $reason = $rejected ? (trim((string) ($data['rejection_reason'] ?? '')) ?: null) : null;
+
+        $payload = [
+            'verification_status' => $data['status'],
+            'verified_by' => $verified ? session('supabase.user.id') : null,
+            'verified_at' => $verified ? now() : null,
+            'rejection_reason' => $reason,
+        ];
+
+        try {
+            // Aksi ini dicatat manual (lengkap dengan nama admin), jadi trigger audit database dilewati
+            // agar tidak muncul dua entri untuk satu kejadian.
+            DB::transaction(function () use ($row, $payload) {
+                if (DB::getDriverName() === 'pgsql') {
+                    DB::statement("select set_config('app.skip_audit', '1', true)");
+                }
+                DB::table('mitra_members')->where('id', $row->id)->update($payload);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', 'Gagal memperbarui verifikasi dokter. Coba lagi.');
+        }
+
+        $label = match ($data['status']) {
+            'verified' => 'diverifikasi',
+            'rejected' => 'ditolak verifikasinya',
+            default => 'dikembalikan ke status menunggu verifikasi',
+        };
+        $doctorName = $row->full_name ?: ($row->username ?: 'Dokter');
+
+        ActivityLogger::log(
+            'admin',
+            $data['status'],
+            'Dokter "' . $doctorName . '" (' . ($row->mitra_name ?? 'klinik') . ') ' . $label,
+            'mitra_members',
+            $row->id,
+            ['verification_status' => $row->verification_status, 'rejection_reason' => $row->rejection_reason],
+            ['verification_status' => $data['status'], 'rejection_reason' => $reason],
+        );
+
+        return back()->with('success', 'Dokter ' . $doctorName . ' berhasil ' . $label . '.');
     }
 
     private function parseDate(mixed $value): ?Carbon

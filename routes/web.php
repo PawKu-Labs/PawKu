@@ -204,6 +204,14 @@ Route::middleware('auth')->group(function () {
         // Persetujuan Petshop & Log Aktivitas
         Route::get('/petshops', [AdminDashboardController::class, 'petshops'])->name('petshops');
         Route::post('/petshops/{id}/status', [AdminDashboardController::class, 'updatePetshopStatus'])->name('petshops.status');
+
+        // Verifikasi dokter hewan klinik (STR/SIP diperiksa admin PawKu)
+        Route::get('/dokter', [AdminDashboardController::class, 'doctors'])->name('doctors');
+        Route::post('/dokter/{member}/status', [AdminDashboardController::class, 'updateDoctorStatus'])
+            ->where('member', UUID_PATTERN)
+            ->middleware('throttle:30,1')
+            ->name('doctors.status');
+
         Route::get('/activity', [AdminDashboardController::class, 'activity'])->name('activity');
 
         Route::view('/pricing', 'admin.pricing')->name('pricing');

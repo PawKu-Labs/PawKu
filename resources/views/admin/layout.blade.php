@@ -35,10 +35,21 @@
         } catch (\Throwable $e) {
         }
 
+        // Dokter hewan yang menunggu verifikasi STR/SIP
+        $pendingDoctors = 0;
+        try {
+            $pendingDoctors = \Illuminate\Support\Facades\DB::table('mitra_members')
+                ->where('member_role', 'dokter')
+                ->where('verification_status', 'pending')
+                ->count();
+        } catch (\Throwable $e) {
+        }
+
         // Ganti nama route di bawah jika berbeda di routes/web.php.
         // Selama route belum ada, link diarahkan ke '#' agar halaman tidak error.
         $articlesUrl = \Illuminate\Support\Facades\Route::has('admin.articles') ? route('admin.articles') : '#';
         $backupUrl = \Illuminate\Support\Facades\Route::has('admin.backup') ? route('admin.backup') : '#';
+        $doctorsUrl = \Illuminate\Support\Facades\Route::has('admin.doctors') ? route('admin.doctors') : '#';
     @endphp
 
     <div class="scrim" id="scrim" aria-hidden="true"></div>
@@ -73,6 +84,18 @@
                 <span>Persetujuan Petshop</span>
                 @if($pendingCount > 0)
                     <span class="badge">{{ $pendingCount }}</span>
+                @endif
+            </a>
+            <a href="{{ $doctorsUrl }}" class="{{ request()->routeIs('admin.doctors*') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <polyline points="16 11 18 13 22 9" />
+                </svg>
+                <span>Verifikasi Dokter</span>
+                @if($pendingDoctors > 0)
+                    <span class="badge">{{ $pendingDoctors }}</span>
                 @endif
             </a>
 
@@ -223,12 +246,15 @@
             });
         }
 
-        function promptReject(formEl) {
+        // Popup penolakan dengan alasan. Tanpa opts tampil untuk petshop (perilaku lama);
+        // halaman lain bisa memberi opts: { title, placeholder, confirmText }.
+        function promptReject(formEl, opts) {
+            opts = opts || {};
             Swal.fire({
-                title: 'Tolak Pendaftaran Petshop?',
+                title: opts.title || 'Tolak Pendaftaran Petshop?',
                 input: 'textarea',
                 inputLabel: 'Alasan Penolakan (opsional)',
-                inputPlaceholder: 'Tuliskan alasan penolakan untuk pemilik petshop...',
+                inputPlaceholder: opts.placeholder || 'Tuliskan alasan penolakan untuk pemilik petshop...',
                 inputAttributes: {
                     maxlength: 500,
                     rows: 3
@@ -236,7 +262,7 @@
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
                 cancelButtonColor: '#64748b',
-                confirmButtonText: 'Ya, Tolak Petshop',
+                confirmButtonText: opts.confirmText || 'Ya, Tolak Petshop',
                 cancelButtonText: 'Batal',
                 reverseButtons: true,
             }).then((result) => {
