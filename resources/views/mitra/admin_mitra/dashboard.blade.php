@@ -2,6 +2,8 @@
 @section('title', 'Beranda')
 
 @section('content')
+    @include('mitra.partials.theme-orange')
+
     @php
         $mi = \App\Support\MitraType::info($clinic->mitra_type);
         $maxService = max(1, (int) ($topServices->max('total') ?? 1));

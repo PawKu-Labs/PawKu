@@ -2,6 +2,8 @@
 @section('title', 'Booking')
 
 @section('content')
+    @include('mitra.partials.theme-orange')
+
     @php
         $timeOf = fn ($t) => $t ? substr((string) $t, 0, 5) : null;
         $dateOf = function ($b) {
@@ -12,6 +14,8 @@
         // Urutan langkah booking aktif
         $steps = ['menunggu' => 'Menunggu', 'dikonfirmasi' => 'Diterima', 'dilayani' => 'Dilayani', 'selesai' => 'Selesai'];
         $stepIndex = array_flip(array_keys($steps));
+        // Warna konfirmasi (oranye). "Tolak" sengaja tetap merah.
+        $orange = '#E8841A';
     @endphp
 
     <div>
@@ -134,7 +138,7 @@
                             @if ($s === 'menunggu')
                                 <div class="act-row">
                                     <form method="POST" action="{{ $statusUrl }}"
-                                        data-confirm="status" data-icon="question" data-color="#16a34a"
+                                        data-confirm="status" data-icon="question" data-color="{{ $orange }}"
                                         data-title="Terima booking {{ $cat }}?"
                                         data-text="Booking diterima dan nomor antri {{ $b->queue_number ?? '-' }} tetap dipakai."
                                         data-ok="Ya, terima">
@@ -157,7 +161,7 @@
                                 <div class="act-row">
                                     @if ($hasDoctor)
                                         <form method="POST" action="{{ $statusUrl }}"
-                                            data-confirm="status" data-icon="question" data-color="#7c3aed"
+                                            data-confirm="status" data-icon="question" data-color="{{ $orange }}"
                                             data-title="Mulai layani {{ $cat }}?"
                                             data-text="Status booking menjadi sedang dilayani oleh {{ $b->doctor_name ?? 'dokter terpilih' }}."
                                             data-ok="Ya, mulai layani">
@@ -188,7 +192,7 @@
                                 <div class="act-row">
                                     @if ($hasDoctor)
                                         <form method="POST" action="{{ $statusUrl }}"
-                                            data-confirm="status" data-icon="question" data-color="#16a34a"
+                                            data-confirm="status" data-icon="question" data-color="{{ $orange }}"
                                             data-title="Tandai {{ $cat }} selesai?"
                                             data-text="Booking akan ditandai selesai dilayani."
                                             data-ok="Ya, selesai">
@@ -234,30 +238,33 @@
 @push('scripts')
     <script>
         // Setiap aksi (terima, tolak, mulai layani, selesai, teruskan ke dokter) minta konfirmasi dulu.
+        // Tombol konfirmasi oranye; hanya "Tolak" yang merah.
         document.addEventListener('submit', function (e) {
             const form = e.target;
             if (!form.matches || !form.matches('form[data-confirm]')) return;
             if (form.dataset.confirmed === '1') return;
             e.preventDefault();
 
+            const ORANGE = '#E8841A';
             let cfg;
             if (form.dataset.confirm === 'doctor') {
                 const select = form.querySelector('select[name="doctor_id"]');
                 const chosen = select && select.value ? select.options[select.selectedIndex].text.trim() : '';
                 cfg = chosen
-                    ? { title: 'Teruskan ke dokter ini?', text: 'Booking ' + form.dataset.cat + ' akan ditangani oleh ' + chosen + '.', ok: 'Ya, teruskan', icon: 'question', color: '#e11d48' }
+                    ? { title: 'Teruskan ke dokter ini?', text: 'Booking ' + form.dataset.cat + ' akan ditangani oleh ' + chosen + '.', ok: 'Ya, teruskan', icon: 'question', color: ORANGE }
                     : { title: 'Kosongkan pilihan dokter?', text: 'Booking ' + form.dataset.cat + ' tidak akan punya dokter yang menangani.', ok: 'Ya, kosongkan', icon: 'warning', color: '#dc2626' };
             } else {
-                cfg = { title: form.dataset.title, text: form.dataset.text, ok: form.dataset.ok, icon: form.dataset.icon || 'question', color: form.dataset.color || '#e11d48' };
+                cfg = { title: form.dataset.title, text: form.dataset.text, ok: form.dataset.ok, icon: form.dataset.icon || 'question', color: form.dataset.color || ORANGE };
             }
 
             Swal.fire({
                 title: cfg.title,
                 text: cfg.text,
                 icon: cfg.icon,
+                iconColor: cfg.color,
                 showCancelButton: true,
                 confirmButtonColor: cfg.color,
-                cancelButtonColor: '#64748b',
+                cancelButtonColor: '#8C7260',
                 confirmButtonText: cfg.ok,
                 cancelButtonText: 'Batal',
                 reverseButtons: true,
